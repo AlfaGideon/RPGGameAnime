@@ -41,6 +41,26 @@ const professions = [
   { id: 'builder', name: 'Строитель', glyph: '⌂', role: 'Городские постройки', summary: 'Проектирует и организует мастерские и городские службы.', work: 'Проект поселения', workText: 'Не хватает досок и металлических деталей для городской кузницы.', action: 'Управлять проектом', accent: '#83b7e8' }
 ];
 
+const AVATAR_OPTIONS = [
+  { id: 'guardian', name: 'Хранитель Лиора', role: 'Страж · портрет игры', src: 'assets/avatars/guardian.svg', accent: '#65d6d0' },
+  { id: 'duelist', name: 'Клинок рассвета', role: 'Дуэлянт · портрет игры', src: 'assets/avatars/duelist.svg', accent: '#f2a66d' },
+  { id: 'ranger', name: 'Следопыт Эйры', role: 'Разведчик · портрет игры', src: 'assets/avatars/ranger.svg', accent: '#86d59a' },
+  { id: 'arcanist', name: 'Астральный маг', role: 'Арканист · портрет игры', src: 'assets/avatars/arcanist.svg', accent: '#b69af1' },
+  { id: 'warden', name: 'Светлый хранитель', role: 'Целитель · портрет игры', src: 'assets/avatars/warden.svg', accent: '#74c9e9' }
+];
+
+function readSavedAvatarId() {
+  try {
+    const saved = window.localStorage.getItem('echo-astra.avatar-id');
+    return AVATAR_OPTIONS.some(avatar => avatar.id === saved) ? saved : AVATAR_OPTIONS[0].id;
+  } catch (error) { return AVATAR_OPTIONS[0].id; }
+}
+
+function saveAvatarId(avatarId) {
+  try { window.localStorage.setItem('echo-astra.avatar-id', avatarId); }
+  catch (error) { /* Private browsing and file:// storage may be unavailable. */ }
+}
+
 const MAP_CONFIG = { width: 100, height: 100, viewRadius: 4, stepSeconds: 6, borderStepSeconds: 9, gameMinutesPerStep: 4 };
 const BIOME_INFO = {
   coast: { name: 'Туманное побережье', short: 'Побережье', glyph: '≈' },
@@ -102,6 +122,7 @@ const state = {
   classId: 'guardian',
   professionId: 'blacksmith',
   characterName: 'Астра',
+  avatarId: readSavedAvatarId(),
   questFilter: 'Все',
   marketTab: 'Фиксированная цена',
   characterTab: 'Обзор',
@@ -134,6 +155,13 @@ const prof = () => professions.find(x => x.id === state.professionId) || profess
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const formatCell = (x, y) => `${x}:${y}`;
 const unreadNotificationCount = () => state.notifications.filter(item => item.unread).length;
+const currentAvatar = () => AVATAR_OPTIONS.find(avatar => avatar.id === state.avatarId) || AVATAR_OPTIONS[0];
+function avatarImageMarkup(avatar = currentAvatar()) {
+  return `<img class="avatar-image" src="${avatar.src}" alt="${esc(avatar.name)}">`;
+}
+function avatarButtonMarkup(className = 'player-portrait', showEdit = true) {
+  return `<button type="button" class="${className} avatar-picker-trigger" data-action="open-avatar-picker" title="Сменить аватар" aria-label="Сменить аватар игрока">${avatarImageMarkup()}${showEdit ? '<span class="avatar-edit-indicator" aria-hidden="true">✎</span>' : ''}</button>`;
+}
 const getBiomeId = (x, y) => biomeSectors[Math.floor((y - 1) / 10)][Math.floor((x - 1) / 10)];
 const getPoi = id => pointsOfInterest.find(point => point.id === id);
 const getPoiAt = (x, y) => pointsOfInterest.find(point => point.x === x && point.y === y);
@@ -178,7 +206,7 @@ function renderShell() {
         ♧${unread ? `<span class="notification-count">${unread > 9 ? '9+' : unread}</span>` : ''}
       </button>
       <button class="icon-button settings-button" data-nav="settings" aria-label="Настройки" title="Настройки">⚙</button>
-      <div class="avatar-small" aria-label="Портрет персонажа">${cls().glyph}</div>
+      ${avatarButtonMarkup('avatar-small', false)}
     </div>`;
 }
 
@@ -280,8 +308,8 @@ function renderWelcome() {
         <div class="welcome-mark">ЭА</div>
         <div><div class="eyebrow">мобильный UI-прототип</div><div class="small muted">аниме-MMORPG · интерфейс без игровых функций</div></div>
       </div>
-      <div class="welcome-art" aria-hidden="true">
-        <div class="welcome-orb"></div><div class="welcome-island"></div><div class="welcome-tower"></div>
+      <div class="welcome-art">
+        <img class="welcome-logo-art" src="assets/echo-astra-logo.png" alt="Логотип «Эхо Астры»: парящий город под звёздным маяком">
       </div>
       <div class="welcome-copy">
         <div class="eyebrow">добро пожаловать в Эйру</div>
@@ -343,7 +371,7 @@ function renderHome() {
   const p = prof();
   screenEl.innerHTML = `
     <div class="player-strip">
-      <div class="player-identity"><div class="player-portrait">${c.glyph}</div><div style="min-width:0"><div class="player-name">${esc(state.characterName || 'Астра')} · Уровень 1</div><div class="player-subtitle">${c.name} <span class="muted">·</span> ${p.name}</div></div></div>
+      <div class="player-identity">${avatarButtonMarkup('player-portrait', true)}<div style="min-width:0"><div class="player-name">${esc(state.characterName || 'Астра')} · Уровень 1</div><div class="player-subtitle">${c.name} <span class="muted">·</span> ${p.name}</div></div></div>
       <div class="currency-pill">✧ 100</div>
     </div>
     <div class="home-location-card card-flat"><span class="home-location-icon">⌖</span><div><strong>${isInsideLior(state.position.x, state.position.y) ? 'Лиор · стартовый город' : BIOME_INFO[getBiomeId(state.position.x, state.position.y)].name}</strong><small>Клетка ${formatCell(state.position.x, state.position.y)}</small></div><button class="text-action" data-nav="map">Карта →</button></div>
@@ -411,7 +439,7 @@ function renderCharacter() {
   const c = cls();
   const p = prof();
   const content = state.characterTab === 'Обзор' ? `
-    <div class="card card-pad"><div class="player-identity"><div class="player-portrait">${c.glyph}</div><div><div class="player-name">${esc(state.characterName || 'Астра')}</div><div class="player-subtitle">Уровень 1 · Откликнувшийся</div></div><span class="badge badge-gold">100 м</span></div>
+    <div class="card card-pad"><div class="player-identity">${avatarButtonMarkup('player-portrait', true)}<div><div class="player-name">${esc(state.characterName || 'Астра')}</div><div class="player-subtitle">Уровень 1 · Откликнувшийся</div></div><span class="badge badge-gold">100 м</span></div>
       <div class="stat-grid"><div class="card-flat stat-box"><strong>${c.damage}</strong><span>Урон</span></div><div class="card-flat stat-box"><strong>${c.durability}</strong><span>Стойкость</span></div><div class="card-flat stat-box"><strong>${c.support}</strong><span>Поддержка</span></div></div>
       <div class="list-card card-flat"><div class="list-icon">${c.glyph}</div><div class="list-copy"><strong>${c.name}</strong><span>${c.role}</span></div><span class="badge badge-teal">Боевой путь</span></div>
       <div class="list-card card-flat" style="margin-top:8px"><div class="list-icon">${p.glyph}</div><div class="list-copy"><strong>${p.name}</strong><span>${p.role}</span></div><span class="badge badge-gold">Профессия</span></div>
@@ -421,7 +449,7 @@ function renderCharacter() {
     <div class="card card-pad"><div class="section-head" style="margin-top:0"><h2>Снаряжение</h2><span class="badge">4 предмета</span></div>${[['⚔','Короткий меч','Обычный · металлический'],['🛡','Дорожный щит','Обычный · защитный'],['⛏','Простая кирка','Инструмент'],['✧','Осколок маяка','Сюжетный предмет']].map(x=>`<div class="list-card card-flat" style="margin-top:8px"><div class="list-icon">${x[0]}</div><div class="list-copy"><strong>${x[1]}</strong><span>${x[2]}</span></div><button class="text-action" data-action="item-details">Открыть</button></div>`).join('')}</div>` : `
     <div class="card card-pad"><div class="section-head" style="margin-top:0"><h2>Способности</h2><span class="badge badge-teal">${c.name}</span></div>${[c.skill,'Защитная стойка','Сигнал Отклика'].map((x,i)=>`<div class="list-card card-flat" style="margin-top:8px"><div class="list-icon">${i===0?c.glyph:'✧'}</div><div class="list-copy"><strong>${x}</strong><span>${i===0?c.role:'Откроется по мере развития.'}</span></div><span class="badge">${i===0?'Доступно':'Закрыто'}</span></div>`).join('')}</div>`;
   screenEl.innerHTML = `
-    <div class="page-title-row"><div><div class="eyebrow">герой и развитие</div><h1>Персонаж</h1><p>Боевой путь и профессия развиваются отдельно.</p></div><div class="player-portrait">${c.glyph}</div></div>
+    <div class="page-title-row"><div><div class="eyebrow">герой и развитие</div><h1>Персонаж</h1><p>Боевой путь и профессия развиваются отдельно.</p></div>${avatarButtonMarkup('player-portrait', true)}</div>
     <div class="notice teal-notice">В тестовом режиме класс и профессию можно бесплатно сменить в настройках. В полноценной игре для этого появятся отдельные правила.</div>
     <div class="segmented">${['Обзор','Инвентарь','Способности'].map(t=>`<button class="${state.characterTab===t?'active':''}" data-character-tab="${t}">${t}</button>`).join('')}</div>
     ${content}
@@ -444,6 +472,7 @@ function getUpdateStatusText() {
 function renderSettings() {
   const c = cls();
   const p = prof();
+  const avatar = currentAvatar();
   const statusClass = state.updateStatus === 'update' ? 'update-found' : state.updateStatus === 'error' ? 'update-error' : '';
   screenEl.innerHTML = `
     <div class="page-title-row"><div><div class="eyebrow">персональные параметры</div><h1>Настройки</h1><p>Обновления и тестовые настройки героя.</p></div><span class="badge badge-teal">ТЕСТ</span></div>
@@ -456,6 +485,12 @@ function renderSettings() {
       ${state.latestRelease && state.latestRelease.html_url && state.updateStatus === 'update' ? `<button class="btn btn-secondary btn-block release-link-button" data-action="open-latest-release">Открыть релиз ${esc(state.latestRelease.tag_name)} →</button>` : ''}
       <p class="settings-footnote">Источник: <code>${UPDATE_REPOSITORY}/releases/latest</code>. Android попросит подтвердить установку APK. Для выпуска обновлений нужна стабильная подпись приложения.</p>
     </section>
+    <div class="section-head"><h2>Аватар игрока</h2><span class="badge">Галерея игры</span></div>
+    <section class="card settings-choice-card avatar-settings-card">
+      <div class="avatar-settings-preview">${avatarImageMarkup(avatar)}</div><div class="settings-choice-copy"><span class="eyebrow">текущий портрет</span><strong>${avatar.name}</strong><small>Только встроенные изображения игры</small></div>
+      <button class="btn btn-secondary btn-small" data-action="open-avatar-picker">Сменить</button>
+    </section>
+    <p class="settings-footnote avatar-gallery-note">Можно выбрать только картинку из галереи игры. Загрузка фотографии с устройства недоступна.</p>
     <div class="section-head"><h2>Боевой класс</h2><span class="badge badge-gold">Бесплатно в тесте</span></div>
     <section class="card settings-choice-card">
       <div class="settings-choice-icon" style="--choice-accent:${c.accent}">${c.glyph}</div><div class="settings-choice-copy"><span class="eyebrow">текущий боевой путь</span><strong>${c.name}</strong><small>${c.role}</small></div>
@@ -503,6 +538,30 @@ function renderNotificationsModal() {
     ${state.notifications.length ? `<div class="notification-list">${notificationRows}</div><div class="notification-controls"><button class="text-action" data-action="mark-all-read" ${unread ? '' : 'disabled'}>Отметить все прочитанными</button><button class="text-action clear-notifications" data-action="clear-notifications">Очистить</button></div>` : '<div class="notification-empty"><span>♧</span><strong>Пока тихо</strong><small>Новые события, прибытия и ответы появятся здесь.</small></div>'}
     <div class="modal-actions"><button class="btn btn-secondary" data-action="close-modal">Закрыть</button></div>`;
   modalBackdrop.hidden = false;
+}
+
+function renderAvatarPicker() {
+  const selectedId = state.avatarId;
+  modalCard.innerHTML = `
+    <div class="notification-modal-head avatar-picker-heading"><div><div class="eyebrow">галерея игры</div><h2>Выбери аватар</h2></div><button class="icon-button" data-action="close-modal" aria-label="Закрыть">×</button></div>
+    <p class="avatar-picker-note">Доступны только встроенные портреты «Эхо Астры». Свои изображения загрузить нельзя.</p>
+    <div class="avatar-option-list">${AVATAR_OPTIONS.map(avatar => `<button type="button" class="avatar-option-card ${selectedId === avatar.id ? 'selected' : ''}" data-avatar-option="${avatar.id}" aria-pressed="${selectedId === avatar.id}" style="--avatar-accent:${avatar.accent}">
+      <span class="avatar-option-image">${avatarImageMarkup(avatar)}</span><span class="avatar-option-copy"><strong>${avatar.name}</strong><small>${avatar.role}</small></span><span class="avatar-option-check">${selectedId === avatar.id ? '✓' : ''}</span>
+    </button>`).join('')}</div>
+    <div class="modal-actions"><button class="btn btn-secondary" data-action="close-modal">Закрыть</button></div>`;
+  modalBackdrop.hidden = false;
+}
+
+function selectGameAvatar(avatarId) {
+  const avatar = AVATAR_OPTIONS.find(option => option.id === avatarId);
+  if (!avatar) return;
+  if (state.avatarId === avatar.id) { closeModal(); showToast('Этот аватар уже выбран'); return; }
+  state.avatarId = avatar.id;
+  saveAvatarId(avatar.id);
+  closeModal();
+  addNotification('Аватар обновлён', `Выбран портрет «${avatar.name}» из галереи игры.`, '◉', 'Персонаж');
+  render();
+  showToast('Игровой аватар изменён');
 }
 
 function parseVersion(version) {
@@ -806,6 +865,9 @@ document.addEventListener('click', (event) => {
   const mapMove = event.target.closest('[data-map-move]');
   if (mapMove) { beginMapTravel(Number(mapMove.dataset.mapX), Number(mapMove.dataset.mapY)); return; }
 
+  const avatarChoice = event.target.closest('[data-avatar-option]');
+  if (avatarChoice) { selectGameAvatar(avatarChoice.dataset.avatarOption); return; }
+
   const choiceOption = event.target.closest('[data-select-option]');
   if (choiceOption && state.modalChoice) {
     state.modalChoice.selectedId = choiceOption.dataset.selectOption;
@@ -871,6 +933,7 @@ document.addEventListener('click', (event) => {
     case 'open-combat-path': go('combat'); break;
     case 'open-profession': go('city'); showToast(`${prof().name}: демонстрационная мастерская`); break;
     case 'open-settings': go('settings'); break;
+    case 'open-avatar-picker': renderAvatarPicker(); break;
     case 'open-npc': visitPoi('iara'); break;
     case 'visit-poi': visitPoi(actionButton.dataset.poiId); break;
     case 'interact-current': visitPoi(actionButton.dataset.poiId); break;

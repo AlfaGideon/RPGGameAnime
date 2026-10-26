@@ -57,6 +57,10 @@ jobs:
           unzip -l "$apk" | grep -q 'assets/index.html'
           unzip -l "$apk" | grep -q 'assets/styles.css'
           unzip -l "$apk" | grep -q 'assets/app.js'
+          unzip -l "$apk" | grep -q 'assets/assets/echo-astra-logo.png'
+          for avatar in guardian duelist ranger arcanist warden; do
+            unzip -l "$apk" | grep -q "assets/assets/avatars/$avatar.svg"
+          done
 
       - name: Publish APK artifact
         uses: actions/upload-artifact@v4

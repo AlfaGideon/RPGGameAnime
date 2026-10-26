@@ -3,9 +3,9 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/ic_launcher"
-        android:label="Эхо Астры · Прототип"
-        android:roundIcon="@drawable/ic_launcher"
+        android:icon="@drawable/echo_astra_logo"
+        android:label="Эхо Астры"
+        android:roundIcon="@drawable/echo_astra_logo"
         android:supportsRtl="true"
         android:theme="@style/AppTheme"
         android:usesCleartextTraffic="false">
