@@ -15,9 +15,15 @@ on:
       - 'ui-prototype/**'
       - '.github/workflows/android-prototype.yml'
   workflow_dispatch:
+    inputs:
+      commit_apk:
+        description: Also save the built APK under apk-output/ on the current Arena branch
+        required: false
+        type: boolean
+        default: false
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-debug-apk:
@@ -49,6 +55,15 @@ jobs:
         working-directory: android-prototype
         run: gradle --no-daemon --stacktrace :app:assembleDebug
 
+      - name: Verify APK signature and bundled UI
+        run: |
+          apk="android-prototype/app/build/outputs/apk/debug/app-debug.apk"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -q "^package: name='com.rpggameanime.prototype'"
+          unzip -l "$apk" | grep -q 'assets/index.html'
+          unzip -l "$apk" | grep -q 'assets/styles.css'
+          unzip -l "$apk" | grep -q 'assets/app.js'
+
       - name: Publish APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -56,3 +71,18 @@ jobs:
           path: android-prototype/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+
+      - name: Save APK on the Arena branch
+        if: github.event_name == 'workflow_dispatch' && inputs.commit_apk == true && github.ref == 'refs/heads/arena/445aa2c5-rpggameanime'
+        run: |
+          mkdir -p apk-output
+          cp android-prototype/app/build/outputs/apk/debug/app-debug.apk apk-output/Echo-Astra-UI-Prototype.apk
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add apk-output/Echo-Astra-UI-Prototype.apk
+          if git diff --cached --quiet; then
+            echo "The checked-in APK is already up to date."
+          else
+            git commit -m "Add installable Android UI prototype APK"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
