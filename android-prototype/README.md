@@ -30,6 +30,6 @@ app/build/outputs/apk/debug/app-debug.apk
 
 Workflow [Build Android UI prototype APK](../.github/workflows/android-prototype.yml) запускается после изменения `android-prototype/` или `ui-prototype/`, а также вручную через `workflow_dispatch`. Каждая успешная сборка проверяет подпись APK и наличие локальных HTML/CSS/JS-экранов, затем публикует artifact **Echo-Astra-UI-Prototype-debug-APK**.
 
-Для текущей Arena-ветки ручной запуск workflow с параметром `commit_apk` сохраняет собранный файл в `apk-output/Echo-Astra-UI-Prototype.apk`. Эту опцию включили для получения устанавливаемого файла непосредственно в проекте.
+При push изменений в текущую Arena-ветку проверенный APK автоматически сохраняется в `apk-output/Echo-Astra-UI-Prototype.apk`.
 
 Debug APK предназначен для прототипирования и ручного тестирования; это не релизная сборка для публикации в магазине.

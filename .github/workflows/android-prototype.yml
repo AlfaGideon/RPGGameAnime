@@ -15,12 +15,6 @@ on:
       - 'ui-prototype/**'
       - '.github/workflows/android-prototype.yml'
   workflow_dispatch:
-    inputs:
-      commit_apk:
-        description: Also save the built APK under apk-output/ on the current Arena branch
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -73,7 +67,7 @@ jobs:
           retention-days: 30
 
       - name: Save APK on the Arena branch
-        if: github.event_name == 'workflow_dispatch' && inputs.commit_apk == true && github.ref == 'refs/heads/arena/445aa2c5-rpggameanime'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/445aa2c5-rpggameanime'
         run: |
           mkdir -p apk-output
           cp android-prototype/app/build/outputs/apk/debug/app-debug.apk apk-output/Echo-Astra-UI-Prototype.apk
