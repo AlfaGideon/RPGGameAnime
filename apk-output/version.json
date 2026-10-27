@@ -1,11 +1,11 @@
 {
-  "versionName": "0.2.12",
-  "versionCode": 1012,
-  "tagName": "v0.2.12",
-  "apkUrl": "https://github.com/AlfaGideon/RPGGameAnime/releases/download/v0.2.12/Echo-Astra-UI-Prototype.apk",
-  "htmlUrl": "https://github.com/AlfaGideon/RPGGameAnime/releases/tag/v0.2.12",
-  "buildSha": "d21c07afde6a11c633b1626632a6d2d06c08f576",
-  "sha256": "e1669ca260bababc6b9ee5f5fa8b047f69c9089d41d94c1f2990906b6294baec",
-  "builtAt": "2026-10-27T03:05:09Z",
-  "workflowRun": "40442075687"
+  "versionName": "0.2.17",
+  "versionCode": 1017,
+  "tagName": "v0.2.17",
+  "apkUrl": "https://github.com/AlfaGideon/RPGGameAnime/releases/download/v0.2.17/Echo-Astra-UI-Prototype.apk",
+  "htmlUrl": "https://github.com/AlfaGideon/RPGGameAnime/releases/tag/v0.2.17",
+  "buildSha": "333cb3d2acffa49de22dfb7f3e00dfdcbbb5e364",
+  "sha256": "ffb762a1a0ca1521e98d7c6dbb8639f8d677650c518aafeb37cbe237e91577d0",
+  "builtAt": "2026-10-27T19:55:15Z",
+  "workflowRun": "40573288649"
 }
