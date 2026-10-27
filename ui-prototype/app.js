@@ -61,46 +61,134 @@ function saveAvatarId(avatarId) {
   catch (error) { /* Private browsing and file:// storage may be unavailable. */ }
 }
 
-const MAP_CONFIG = { width: 100, height: 100, viewRadius: 4 };
+const GAME_CLOCK_RATE = 5; // Five in-game hours pass per one real hour.
+const WORLD_MAP_VERSION = 2;
+const MAP_CONFIG = { width: 1000, height: 1000, localSize: 10, biomeSize: 10, worldRegionSize: 100 };
+const LIOR_CITY = { xMin: 491, xMax: 500, yMin: 491, yMax: 500, start: { x: 496, y: 496 } };
 const MOVEMENT_RULES = {
   classGameMinutes: { guardian: 8, duelist: 6, ranger: 4, arcanist: 6, warden: 7 },
   professionMinuteModifier: { blacksmith: 1, farmer: 0, herbalist: -1, miner: 2, carpenter: 1, tanner: 1, builder: 0 },
   biomeTransitionMinutes: 3,
   minimumGameMinutes: 3,
-  demoMillisecondsPerGameMinute: 1000
+  realMillisecondsPerGameMinute: 60000 / GAME_CLOCK_RATE
 };
 const BIOME_INFO = {
-  coast: { name: 'Туманное побережье', short: 'Побережье', glyph: '≈' },
+  city: { name: 'Лиор · городская локация', short: 'Город', glyph: '⌂' },
+  cloud: { name: 'Белые облака', short: 'Облака · нужен транспорт', glyph: '☁' },
   forest: { name: 'Шепчущий лес', short: 'Лес', glyph: '♧' },
   highland: { name: 'Осколочные нагорья', short: 'Нагорья', glyph: '△' },
   marsh: { name: 'Сумрачные топи', short: 'Топи', glyph: '♨' },
   frost: { name: 'Северные льды', short: 'Льды', glyph: '❄' }
 };
 
-// The world contains 10 × 10 sectors; each sector is a 10 × 10 tile area.
-const biomeSectors = [
-  ['coast', 'coast', 'forest', 'forest', 'forest', 'highland', 'highland', 'frost', 'frost', 'frost'],
-  ['coast', 'coast', 'coast', 'forest', 'forest', 'highland', 'highland', 'frost', 'frost', 'frost'],
-  ['coast', 'coast', 'forest', 'forest', 'forest', 'highland', 'highland', 'frost', 'frost', 'frost'],
-  ['coast', 'coast', 'coast', 'forest', 'forest', 'marsh', 'marsh', 'highland', 'highland', 'highland'],
-  ['coast', 'coast', 'coast', 'coast', 'forest', 'marsh', 'marsh', 'highland', 'highland', 'highland'],
-  ['coast', 'coast', 'forest', 'forest', 'forest', 'marsh', 'marsh', 'marsh', 'highland', 'highland'],
-  ['coast', 'coast', 'forest', 'forest', 'forest', 'marsh', 'marsh', 'marsh', 'forest', 'forest'],
-  ['coast', 'forest', 'forest', 'forest', 'highland', 'marsh', 'marsh', 'forest', 'forest', 'forest'],
-  ['forest', 'forest', 'forest', 'highland', 'highland', 'highland', 'forest', 'forest', 'coast', 'coast'],
-  ['forest', 'forest', 'highland', 'highland', 'highland', 'forest', 'coast', 'coast', 'coast', 'coast']
+// The world overview is a 10 × 10 grid of 100 × 100-cell regions (1,000 × 1,000 cells total).
+// Former water/coast regions are now white, impassable cloud fields.
+const worldBiomeRegions = [
+  ['cloud', 'cloud', 'forest', 'forest', 'forest', 'highland', 'highland', 'frost', 'frost', 'frost'],
+  ['cloud', 'cloud', 'cloud', 'forest', 'forest', 'highland', 'highland', 'frost', 'frost', 'frost'],
+  ['cloud', 'cloud', 'forest', 'forest', 'forest', 'highland', 'highland', 'frost', 'frost', 'frost'],
+  ['cloud', 'cloud', 'cloud', 'forest', 'forest', 'marsh', 'marsh', 'highland', 'highland', 'highland'],
+  ['cloud', 'cloud', 'cloud', 'cloud', 'forest', 'marsh', 'marsh', 'highland', 'highland', 'highland'],
+  ['cloud', 'cloud', 'forest', 'forest', 'forest', 'marsh', 'marsh', 'marsh', 'highland', 'highland'],
+  ['cloud', 'cloud', 'forest', 'forest', 'forest', 'marsh', 'marsh', 'marsh', 'forest', 'forest'],
+  ['cloud', 'forest', 'forest', 'forest', 'highland', 'marsh', 'marsh', 'forest', 'forest', 'forest'],
+  ['forest', 'forest', 'forest', 'highland', 'highland', 'highland', 'forest', 'forest', 'cloud', 'cloud'],
+  ['forest', 'forest', 'highland', 'highland', 'highland', 'forest', 'cloud', 'cloud', 'cloud', 'cloud']
 ];
 
 const pointsOfInterest = [
-  { id: 'iara', name: 'Иара Кест', kind: 'npc', glyph: '👩‍🔧', x: 10, y: 50, description: 'Инженер маяков · стартовый NPC' },
-  { id: 'smith', name: 'Кузница Торена Валя', kind: 'npc', glyph: '⚒', x: 9, y: 50, description: 'Ремонт и базовое снаряжение' },
-  { id: 'merchant', name: 'Лавка Мейры Соль', kind: 'npc', glyph: '◈', x: 10, y: 49, description: 'Городские расходники' },
-  { id: 'herbalist', name: 'Травница Элна Рут', kind: 'npc', glyph: '✿', x: 10, y: 51, description: 'Лечебные средства и травы' },
-  { id: 'guild', name: 'Гильдия «Крылья Эйры»', kind: 'guild', glyph: '⌘', x: 11, y: 50, description: 'Зал гильдии и городской совет' },
-  { id: 'quest-board', name: 'Доска заданий', kind: 'service', glyph: '✦', x: 9, y: 49, description: 'Поручения Лиора' },
-  { id: 'market', name: 'Торговая площадь', kind: 'service', glyph: '▤', x: 11, y: 49, description: 'Рынок и заявки игроков' },
-  { id: 'beacon', name: 'Старый сигнальный маяк', kind: 'landmark', glyph: '✧', x: 30, y: 50, description: 'Переход к лесному тракту' }
+  { id: 'iara', name: 'Иара Кест', kind: 'npc', glyph: '👩‍🔧', x: 496, y: 496, description: 'Инженер маяков · стартовый NPC' },
+  { id: 'smith', name: 'Кузница Торена Валя', kind: 'npc', glyph: '⚒', x: 495, y: 496, description: 'Ремонт и базовое снаряжение' },
+  { id: 'merchant', name: 'Лавка Мейры Соль', kind: 'npc', glyph: '◈', x: 496, y: 495, description: 'Городские расходники' },
+  { id: 'herbalist', name: 'Травница Элна Рут', kind: 'npc', glyph: '✿', x: 496, y: 497, description: 'Лечебные средства и травы' },
+  { id: 'guild', name: 'Гильдия «Крылья Эйры»', kind: 'guild', glyph: '⌘', x: 497, y: 496, description: 'Зал гильдии и городской совет' },
+  { id: 'quest-board', name: 'Доска заданий', kind: 'service', glyph: '✦', x: 495, y: 495, description: 'Поручения Лиора' },
+  { id: 'market', name: 'Торговая площадь', kind: 'service', glyph: '▤', x: 497, y: 495, description: 'Рынок и заявки игроков' },
+  { id: 'beacon', name: 'Старый сигнальный маяк', kind: 'landmark', glyph: '✧', x: 501, y: 496, description: 'Переход к лесному тракту' }
 ];
+
+function isInsideLior(x, y) {
+  return x >= LIOR_CITY.xMin && x <= LIOR_CITY.xMax && y >= LIOR_CITY.yMin && y <= LIOR_CITY.yMax;
+}
+
+function getWorldRegionBiomeId(x, y) {
+  if (!Number.isFinite(Number(x)) || !Number.isFinite(Number(y)) || Number(x) < 1 || Number(x) > MAP_CONFIG.width || Number(y) < 1 || Number(y) > MAP_CONFIG.height) return 'cloud';
+  return worldBiomeRegions[Math.floor((Number(y) - 1) / MAP_CONFIG.worldRegionSize)][Math.floor((Number(x) - 1) / MAP_CONFIG.worldRegionSize)];
+}
+
+function getBiomeId(x, y) {
+  x = Number(x); y = Number(y);
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 1 || x > MAP_CONFIG.width || y < 1 || y > MAP_CONFIG.height) return 'cloud';
+  if (isInsideLior(x, y)) return 'city';
+  // Keep a clear, walkable approach around the starter city and its lighthouse.
+  if (x >= 486 && x <= 510 && y >= 486 && y <= 510) return 'forest';
+  const regionX = Math.floor((x - 1) / MAP_CONFIG.worldRegionSize);
+  const regionY = Math.floor((y - 1) / MAP_CONFIG.worldRegionSize);
+  const baseBiome = worldBiomeRegions[regionY][regionX];
+  if (baseBiome === 'cloud') return 'cloud';
+  const patchX = Math.floor(((x - 1) % MAP_CONFIG.worldRegionSize) / MAP_CONFIG.biomeSize);
+  const patchY = Math.floor(((y - 1) % MAP_CONFIG.worldRegionSize) / MAP_CONFIG.biomeSize);
+  const texture = (patchX * 7 + patchY * 3 + regionX * 5 + regionY * 11) % 29;
+  if (baseBiome === 'forest' && texture === 0) return 'highland';
+  if (baseBiome === 'forest' && texture === 1) return 'marsh';
+  if (baseBiome === 'highland' && texture === 0) return 'forest';
+  if (baseBiome === 'highland' && texture === 1) return 'frost';
+  if (baseBiome === 'marsh' && texture === 0) return 'forest';
+  if (baseBiome === 'marsh' && texture === 1) return 'highland';
+  if (baseBiome === 'frost' && texture === 0) return 'highland';
+  if (baseBiome === 'frost' && texture === 1) return 'forest';
+  return baseBiome;
+}
+
+const isCloudBlocked = (x, y, hasTransport = false) => getBiomeId(x, y) === 'cloud' && !hasTransport;
+const clampMapCoordinate = value => Math.max(1, Math.min(MAP_CONFIG.width, Math.round(Number(value) || 1)));
+
+function getLegacyMapPosition(point) {
+  const x = Number(point && point.x);
+  const y = Number(point && point.y);
+  if (!Number.isInteger(x) || !Number.isInteger(y) || x < 1 || x > 100 || y < 1 || y > 100) return { ...LIOR_CITY.start };
+  if (x >= 7 && x <= 14 && y >= 47 && y <= 53) return { ...LIOR_CITY.start };
+  const migrated = { x: clampMapCoordinate(x * 10), y: clampMapCoordinate(y * 10) };
+  return isCloudBlocked(migrated.x, migrated.y) ? { ...LIOR_CITY.start } : migrated;
+}
+
+const GAME_CLOCK_STORAGE_KEY = 'echo-astra.game-clock-anchor';
+function readGameClockAnchor() {
+  const now = Date.now();
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(GAME_CLOCK_STORAGE_KEY) || 'null');
+    const realTimestamp = Number(saved && saved.realTimestamp);
+    const gameTimestamp = Number(saved && saved.gameTimestamp);
+    if (Number.isFinite(realTimestamp) && realTimestamp > 0 && Number.isFinite(gameTimestamp) && gameTimestamp > 0) {
+      return { realTimestamp, gameTimestamp };
+    }
+  } catch (error) { /* Start a new local demo clock when storage is unavailable. */ }
+  const anchor = { realTimestamp: now, gameTimestamp: now };
+  try { window.localStorage.setItem(GAME_CLOCK_STORAGE_KEY, JSON.stringify(anchor)); }
+  catch (error) { /* Private browsing and file:// storage may be unavailable. */ }
+  return anchor;
+}
+const gameClockAnchor = readGameClockAnchor();
+function getGameTimestamp(realTimestamp = Date.now()) {
+  return gameClockAnchor.gameTimestamp + (Number(realTimestamp) - gameClockAnchor.realTimestamp) * GAME_CLOCK_RATE;
+}
+
+function readSavedQuestTimers() {
+  try {
+    const saved = JSON.parse(window.localStorage.getItem('echo-astra.quest-timers') || '{}');
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return {};
+    return Object.keys(saved).reduce((timers, id) => {
+      const timer = saved[id];
+      if (timer && Number.isFinite(Number(timer.endsAtGame))) timers[id] = timer;
+      return timers;
+    }, {});
+  } catch (error) { return {}; }
+}
+
+function saveQuestTimers() {
+  try { window.localStorage.setItem('echo-astra.quest-timers', JSON.stringify(state.questTimers)); }
+  catch (error) { /* Timers stay local to this demo install. */ }
+}
 
 const UPDATE_REPOSITORY = 'AlfaGideon/RPGGameAnime';
 const UPDATE_BRANCH = 'arena/f45db89b-rpggameanime';
@@ -127,32 +215,38 @@ const CURRENT_APP_VERSION = installedBuild.versionName;
 const CURRENT_APP_VERSION_CODE = installedBuild.versionCode;
 
 function readWorldProgress() {
-  const fallback = { position: { x: 10, y: 50 }, travel: null };
+  const fallback = { position: { ...LIOR_CITY.start }, travel: null };
   const validCell = point => point && Number.isInteger(Number(point.x)) && Number.isInteger(Number(point.y))
     && Number(point.x) >= 1 && Number(point.x) <= MAP_CONFIG.width
     && Number(point.y) >= 1 && Number(point.y) <= MAP_CONFIG.height;
-  const biomeAt = point => biomeSectors[Math.floor((Number(point.y) - 1) / 10)][Math.floor((Number(point.x) - 1) / 10)];
   try {
     const saved = JSON.parse(window.localStorage.getItem('echo-astra.world-progress') || 'null');
-    if (!saved || !validCell(saved.position)) return fallback;
+    if (!saved || !saved.position) return fallback;
+    if (Number(saved.mapVersion) !== WORLD_MAP_VERSION) {
+      return { position: getLegacyMapPosition(saved.position), travel: null };
+    }
+    if (!validCell(saved.position)) return fallback;
     const position = { x: Number(saved.position.x), y: Number(saved.position.y) };
+    if (isCloudBlocked(position.x, position.y)) return fallback;
     const savedTravel = saved.travel;
     if (!savedTravel || !validCell(savedTravel.from) || !validCell(savedTravel.to)) return { position, travel: null };
     const startedAt = Number(savedTravel.startedAt);
     const endsAt = Number(savedTravel.endsAt);
     const durationMs = Number(savedTravel.durationMs);
     if (!Number.isFinite(startedAt) || !Number.isFinite(endsAt) || !Number.isFinite(durationMs) || durationMs <= 0) return { position, travel: null };
-    const to = { x: Number(savedTravel.to.x), y: Number(savedTravel.to.y) };
-    if (endsAt <= Date.now()) return { position: to, travel: null };
     const from = { x: Number(savedTravel.from.x), y: Number(savedTravel.from.y) };
-    const fromBiome = biomeAt(from);
-    const toBiome = biomeAt(to);
+    const to = { x: Number(savedTravel.to.x), y: Number(savedTravel.to.y) };
+    if (isCloudBlocked(from.x, from.y) || isCloudBlocked(to.x, to.y)) return { position, travel: null };
+    if (endsAt <= Date.now()) return { position: to, travel: null };
+    const fromBiome = getBiomeId(from.x, from.y);
+    const toBiome = getBiomeId(to.x, to.y);
+    const gameEndsAt = Number(savedTravel.gameEndsAt) || getGameTimestamp(endsAt);
     return {
       position: from,
       travel: {
         from, to, fromBiome, toBiome, biomeTransition: fromBiome !== toBiome,
-        durationMs, startedAt, endsAt,
-        gameMinutes: Number(savedTravel.gameMinutes) || Math.ceil(durationMs / MOVEMENT_RULES.demoMillisecondsPerGameMinute)
+        durationMs, startedAt, endsAt, gameEndsAt,
+        gameMinutes: Number(savedTravel.gameMinutes) || Math.ceil(durationMs / MOVEMENT_RULES.realMillisecondsPerGameMinute)
       }
     };
   } catch (error) { return fallback; }
@@ -191,14 +285,16 @@ const state = {
   cityMode: 'lior',
   position: initialWorldProgress.position,
   travel: initialWorldProgress.travel,
+  hasCloudTransport: false,
+  questTimers: readSavedQuestTimers(),
   autoUpdateEnabled: readAutoUpdatePreference(),
   updateStatus: 'idle',
   updateCheckInProgress: false,
   latestRelease: null,
   modalChoice: null,
   notifications: [
-    { id: 1, glyph: '✦', title: 'Добро пожаловать в Лиор', text: 'Ты начинаешь путь в портовом городе. Иара ждёт на клетке 10:50.', time: 'Сейчас', category: 'Сюжет', unread: true },
-    { id: 2, glyph: '⌖', title: 'Открой карту мира', text: 'Лиор занимает несколько клеток. У каждого NPC и здания есть своя точка.', time: 'Сейчас', category: 'Мир', unread: true },
+    { id: 1, glyph: '✦', title: 'Добро пожаловать в Лиор', text: 'Ты начинаешь путь в портовом городе. Иара ждёт на клетке 496:496.', time: 'Сейчас', category: 'Сюжет', unread: true },
+    { id: 2, glyph: '⌖', title: 'Открой карту мира', text: 'Три масштаба карты: 10 × 10, 100 × 100 и 1 000 × 1 000. Белые облака непроходимы без транспорта.', time: 'Сейчас', category: 'Мир', unread: true },
     { id: 3, glyph: '⚙', title: 'Настройки героя', text: 'В тестовом режиме класс и профессию можно менять бесплатно.', time: 'Сейчас', category: 'Система', unread: false }
   ],
   nextNotificationId: 4
@@ -215,7 +311,7 @@ let toastTimer;
 const cls = () => combatClasses.find(x => x.id === state.classId) || combatClasses[0];
 const prof = () => professions.find(x => x.id === state.professionId) || professions[0];
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const formatCell = (x, y) => `${x}:${y}`;
+const formatCell = (x, y) => `${String(x).padStart(3, '0')}:${String(y).padStart(3, '0')}`;
 const unreadNotificationCount = () => state.notifications.filter(item => item.unread).length;
 const currentAvatar = () => AVATAR_OPTIONS.find(avatar => avatar.id === state.avatarId) || AVATAR_OPTIONS[0];
 function avatarImageMarkup(avatar = currentAvatar()) {
@@ -234,7 +330,7 @@ function getMovementGameMinutes({ biomeTransition = false, classId = state.class
   return Math.max(MOVEMENT_RULES.minimumGameMinutes, classMinutes + professionModifier + (biomeTransition ? MOVEMENT_RULES.biomeTransitionMinutes : 0));
 }
 function getMovementDurationMs(biomeTransition = false) {
-  return getMovementGameMinutes({ biomeTransition }) * MOVEMENT_RULES.demoMillisecondsPerGameMinute;
+  return getMovementGameMinutes({ biomeTransition }) * MOVEMENT_RULES.realMillisecondsPerGameMinute;
 }
 const moscowClockFormatter = (() => {
   try {
@@ -248,22 +344,42 @@ function formatMoscowClock(timestamp = Date.now()) {
 function formatMoscowTime(timestamp = Date.now()) {
   return `${formatMoscowClock(timestamp)} МСК`;
 }
+function formatGameClock(realTimestamp = Date.now()) {
+  return formatMoscowClock(getGameTimestamp(realTimestamp));
+}
+function formatGameDuration(milliseconds) {
+  const totalMinutes = Math.max(0, Math.ceil(milliseconds / 60000));
+  const days = Math.floor(totalMinutes / 1440);
+  const hours = Math.floor((totalMinutes % 1440) / 60);
+  const minutes = totalMinutes % 60;
+  if (days) return `${days} д ${hours} ч`;
+  if (hours) return `${hours} ч ${minutes} мин`;
+  return `${minutes} мин`;
+}
 function saveWorldProgress() {
-  try { window.localStorage.setItem('echo-astra.world-progress', JSON.stringify({ position: state.position, travel: state.travel })); }
+  try { window.localStorage.setItem('echo-astra.world-progress', JSON.stringify({ mapVersion: WORLD_MAP_VERSION, position: state.position, travel: state.travel })); }
   catch (error) { /* Private browsing and file:// storage may be unavailable. */ }
 }
 function updateMoscowClocks() {
-  const clock = formatMoscowClock();
+  const now = Date.now();
+  const clock = formatMoscowClock(now);
+  const gameClock = formatGameClock(now);
   document.querySelectorAll('[data-moscow-clock]').forEach(element => { element.textContent = clock; });
+  document.querySelectorAll('[data-game-clock]').forEach(element => { element.textContent = gameClock; });
+  document.querySelectorAll('[data-quest-timer]').forEach(element => {
+    const timer = state.questTimers[element.dataset.questTimer];
+    if (!timer) return;
+    const remaining = Number(timer.endsAtGame) - getGameTimestamp(now);
+    element.textContent = remaining <= 0 ? 'Срок истёк' : `${formatGameDuration(remaining)} игрового времени`;
+    element.classList.toggle('expired', remaining <= 0);
+  });
 }
 function avatarButtonMarkup(className = 'player-portrait', showEdit = true) {
   return `<button type="button" class="${className} avatar-picker-trigger" data-action="open-avatar-picker" title="Сменить аватар" aria-label="Сменить аватар игрока">${avatarImageMarkup()}${showEdit ? '<span class="avatar-edit-indicator" aria-hidden="true">✎</span>' : ''}</button>`;
 }
-const getBiomeId = (x, y) => biomeSectors[Math.floor((y - 1) / 10)][Math.floor((x - 1) / 10)];
 const getPoi = id => pointsOfInterest.find(point => point.id === id);
 const getPoiAt = (x, y) => pointsOfInterest.find(point => point.x === x && point.y === y);
 const isAtPoi = point => state.position.x === point.x && state.position.y === point.y;
-const isInsideLior = (x, y) => x >= 7 && x <= 14 && y >= 47 && y <= 53;
 
 function addNotification(title, text, glyph = '✦', category = 'Мир', key = '') {
   if (key && state.notifications.some(item => item.key === key)) return;
@@ -318,54 +434,69 @@ function renderNav() {
 
 function renderMap() {
   const { x, y } = state.position;
-  const radius = MAP_CONFIG.viewRadius;
-  const minX = Math.max(1, x - radius);
-  const maxX = Math.min(MAP_CONFIG.width, x + radius);
-  const minY = Math.max(1, y - radius);
-  const maxY = Math.min(MAP_CONFIG.height, y + radius);
+  const viewSize = MAP_CONFIG.localSize;
+  const minX = Math.max(1, Math.min(MAP_CONFIG.width - viewSize + 1, x - Math.floor(viewSize / 2)));
+  const minY = Math.max(1, Math.min(MAP_CONFIG.height - viewSize + 1, y - Math.floor(viewSize / 2)));
+  const maxX = minX + viewSize - 1;
+  const maxY = minY + viewSize - 1;
   const currentBiomeId = getBiomeId(x, y);
   const currentBiome = BIOME_INFO[currentBiomeId];
   const currentPoi = getPoiAt(x, y);
-  const locationName = currentPoi ? currentPoi.name : (isInsideLior(x, y) ? 'Лиор · улицы порта' : currentBiome.name);
+  const locationName = isInsideLior(x, y) ? 'Лиор · стартовый город' : (currentPoi ? currentPoi.name : currentBiome.name);
   const progress = state.travel ? Math.min(100, ((Date.now() - state.travel.startedAt) / state.travel.durationMs) * 100) : 0;
+  const travelGameArrival = state.travel ? (Number(state.travel.gameEndsAt) || getGameTimestamp(state.travel.endsAt)) : 0;
   const travelPanel = state.travel ? `
     <div class="card travel-panel">
       <div class="travel-panel-heading"><div><span class="eyebrow">перемещение</span><strong>Путь к клетке ${formatCell(state.travel.to.x, state.travel.to.y)}</strong></div><strong class="travel-countdown" data-travel-countdown>${formatCountdown(getTravelRemainingMs())}</strong></div>
       <div class="travel-progress"><span data-travel-progress style="width:${progress}%"></span></div>
-      <p>${state.travel.biomeTransition ? 'Переход между биомами · ' : ''}${state.travel.gameMinutes} игровых мин. · прибытие ${formatMoscowTime(state.travel.endsAt)} · демо: 1 игровая минута = 1 секунда.</p>
+      <p>${state.travel.biomeTransition ? 'Переход между биомами · ' : ''}${state.travel.gameMinutes} игровых мин. · прибытие ${formatMoscowTime(state.travel.endsAt)} · игровое время прибытия ${formatMoscowClock(travelGameArrival)}. Скорость мира: 1 ч МСК = 5 ч игры.</p>
     </div>` : `
-    <div class="map-travel-note"><span class="travel-note-icon">⌛</span><span>Скорость <strong>${cls().name} + ${prof().name}: ${getMovementGameMinutes()} игровых мин.</strong> за клетку. Граница биома: +${MOVEMENT_RULES.biomeTransitionMinutes} мин. · демо: 1 минута = 1 секунда.</span></div>`;
+    <div class="map-travel-note"><span class="travel-note-icon">⌛</span><span><strong>${cls().name} + ${prof().name}: ${getMovementGameMinutes()} игровых мин.</strong> за клетку. Переход биома: +${MOVEMENT_RULES.biomeTransitionMinutes} мин. Темп: 1 ч МСК = 5 игровых ч (1 игровая минута = 12 сек. ожидания).</span></div>`;
 
   const tiles = [];
-  for (let rowY = y - radius; rowY <= y + radius; rowY += 1) {
-    for (let columnX = x - radius; columnX <= x + radius; columnX += 1) {
-      const insideWorld = columnX >= 1 && columnX <= MAP_CONFIG.width && rowY >= 1 && rowY <= MAP_CONFIG.height;
+  for (let rowY = minY; rowY <= maxY; rowY += 1) {
+    for (let columnX = minX; columnX <= maxX; columnX += 1) {
       const current = columnX === x && rowY === y;
       const distance = Math.abs(columnX - x) + Math.abs(rowY - y);
-      if (!insideWorld) {
-        tiles.push('<span class="world-tile world-edge" aria-hidden="true"></span>');
-        continue;
-      }
       const biomeId = getBiomeId(columnX, rowY);
       const poi = getPoiAt(columnX, rowY);
       const target = state.travel && state.travel.to.x === columnX && state.travel.to.y === rowY;
-      const canMove = !state.travel && distance === 1;
+      const cloudBlocked = !state.travel && distance === 1 && isCloudBlocked(columnX, rowY, state.hasCloudTransport);
+      const canMove = !state.travel && distance === 1 && !cloudBlocked;
       const attrs = current && poi
         ? `data-action="interact-current" data-poi-id="${poi.id}"`
-        : canMove
-          ? `data-map-move data-map-x="${columnX}" data-map-y="${rowY}"`
-          : 'disabled';
-      const tileLabel = `Клетка ${formatCell(columnX, rowY)} · ${BIOME_INFO[biomeId].name}${poi ? ` · ${poi.name}` : ''}${current ? ' · вы здесь' : ''}`;
-      tiles.push(`<button type="button" class="world-tile biome-${biomeId}${current ? ' current-tile' : ''}${poi ? ' poi-tile' : ''}${target ? ' travel-target' : ''}${canMove ? ' reachable-tile' : ''}" ${attrs} aria-label="${esc(tileLabel)}" title="${esc(tileLabel)}">
-        ${current ? '<span class="you-marker">●</span>' : poi ? `<span class="poi-marker">${poi.glyph}</span>` : `<span class="biome-marker">${BIOME_INFO[biomeId].glyph}</span>`}
-      </button>`);
+        : cloudBlocked
+          ? 'data-cloud-blocked'
+          : canMove
+            ? `data-map-move data-map-x="${columnX}" data-map-y="${rowY}"`
+            : 'disabled';
+      const tileLabel = `Клетка ${formatCell(columnX, rowY)} · ${BIOME_INFO[biomeId].name}${poi ? ` · ${poi.name}` : ''}${current ? ' · вы здесь' : ''}${cloudBlocked ? ' · пешком нельзя, нужен транспорт' : ''}`;
+      const marker = current ? '<span class="you-marker">●</span>' : poi ? `<span class="poi-marker">${poi.glyph}</span>` : `<span class="biome-marker">${BIOME_INFO[biomeId].glyph}</span>`;
+      tiles.push(`<button type="button" class="world-tile biome-${biomeId}${current ? ' current-tile' : ''}${poi ? ' poi-tile' : ''}${target ? ' travel-target' : ''}${canMove ? ' reachable-tile' : ''}${cloudBlocked ? ' cloud-locked' : ''}" ${attrs} aria-label="${esc(tileLabel)}" title="${esc(tileLabel)}">${marker}</button>`);
     }
   }
 
-  const sectorTiles = biomeSectors.map((row, rowIndex) => row.map((biomeId, columnIndex) => {
-    const currentSector = Math.floor((x - 1) / 10) === columnIndex && Math.floor((y - 1) / 10) === rowIndex;
-    const name = `${BIOME_INFO[biomeId].name} · сектор ${columnIndex + 1}:${rowIndex + 1}`;
-    return `<span class="sector-tile biome-${biomeId}${currentSector ? ' active-sector' : ''}" title="${esc(name)}" aria-label="${esc(name)}">${currentSector ? '●' : ''}</span>`;
+  const worldRegionX = Math.floor((x - 1) / MAP_CONFIG.worldRegionSize);
+  const worldRegionY = Math.floor((y - 1) / MAP_CONFIG.worldRegionSize);
+  const regionStartX = worldRegionX * MAP_CONFIG.worldRegionSize + 1;
+  const regionStartY = worldRegionY * MAP_CONFIG.worldRegionSize + 1;
+  const currentPatchX = Math.floor(((x - 1) % MAP_CONFIG.worldRegionSize) / MAP_CONFIG.biomeSize);
+  const currentPatchY = Math.floor(((y - 1) % MAP_CONFIG.worldRegionSize) / MAP_CONFIG.biomeSize);
+  const biomeTiles = Array.from({ length: 10 }, (_, patchY) => Array.from({ length: 10 }, (_, patchX) => {
+    const sampleX = regionStartX + patchX * MAP_CONFIG.biomeSize + 4;
+    const sampleY = regionStartY + patchY * MAP_CONFIG.biomeSize + 4;
+    const biomeId = getBiomeId(sampleX, sampleY);
+    const currentPatch = patchX === currentPatchX && patchY === currentPatchY;
+    const name = `${BIOME_INFO[biomeId].name} · участок ${patchX + 1}:${patchY + 1} · 10 × 10 клеток`;
+    return `<span class="sector-tile biome-${biomeId}${currentPatch ? ' active-sector' : ''}" title="${esc(name)}" aria-label="${esc(name)}">${currentPatch ? '●' : biomeId === 'city' ? '⌂' : ''}</span>`;
+  }).join('')).join('');
+
+  const worldTiles = worldBiomeRegions.map((row, rowIndex) => row.map((biomeId, columnIndex) => {
+    const currentRegion = columnIndex === worldRegionX && rowIndex === worldRegionY;
+    const cityRegion = Math.floor((LIOR_CITY.start.x - 1) / MAP_CONFIG.worldRegionSize) === columnIndex
+      && Math.floor((LIOR_CITY.start.y - 1) / MAP_CONFIG.worldRegionSize) === rowIndex;
+    const name = `${BIOME_INFO[biomeId].name} · область ${columnIndex + 1}:${rowIndex + 1} · 100 × 100 клеток${cityRegion ? ' · здесь Лиор' : ''}`;
+    return `<span class="sector-tile world-region-tile biome-${biomeId}${currentRegion ? ' active-sector' : ''}${cityRegion ? ' city-region' : ''}" title="${esc(name)}" aria-label="${esc(name)}">${cityRegion ? '⌂' : currentRegion ? '●' : ''}</span>`;
   }).join('')).join('');
 
   const nearbyPoints = pointsOfInterest
@@ -378,26 +509,28 @@ function renderMap() {
     </button>`).join('');
 
   screenEl.innerHTML = `
-    <div class="page-title-row map-page-title"><div><div class="eyebrow">путешествия по Эйре · 100 × 100 клеток</div><h1>Карта мира</h1><p>Открой соседнюю клетку, чтобы сделать следующий шаг.</p></div><span class="badge badge-teal">${currentBiome.glyph} ${currentBiome.short}</span></div>
+    <div class="page-title-row map-page-title"><div><div class="eyebrow">Эйра · мир 1000 × 1000 клеток</div><h1>Карта мира</h1><p>Три масштаба: участок, биом и весь мир.</p></div><span class="badge badge-teal">${currentBiome.glyph} ${currentBiome.short}</span></div>
     <section class="card map-location-card">
-      <div class="map-location-pin">⌖</div><div class="map-location-copy"><span class="eyebrow">текущее местоположение</span><strong>${locationName}</strong><span>${currentBiome.name} · клетка ${formatCell(x, y)}</span></div>
-      <span class="map-coordinate">X ${String(x).padStart(2, '0')}<br>Y ${String(y).padStart(2, '0')}<small class="map-clock-row">МСК <b data-moscow-clock>${formatMoscowClock()}</b></small></span>
+      <div class="map-location-pin">⌖</div>
+      <div class="map-location-copy"><span class="eyebrow">текущее местоположение</span><strong>${locationName}</strong><span>${currentBiome.name} · клетка ${formatCell(x, y)}</span></div>
+      <div class="map-time-panel"><div class="map-coordinate">X ${String(x).padStart(3, '0')} · Y ${String(y).padStart(3, '0')}</div><div class="map-clock-pair" aria-label="Обычное и игровое время"><span class="map-clock-chip"><small>МСК</small><b data-moscow-clock>${formatMoscowClock()}</b></span><span class="map-clock-chip game-clock-chip" title="1 час по Москве равен 5 игровым часам"><small>ИГРА ×5</small><b data-game-clock>${formatGameClock()}</b></span></div></div>
     </section>
     ${travelPanel}
     <section class="card map-view-card">
-      <div class="map-view-heading"><div><strong>Окрестности</strong><span>Каждый квадрат — одна клетка</span></div><span class="map-scale">${minX}—${maxX} · ${minY}—${maxY}</span></div>
-      <div class="world-map-grid" role="group" aria-label="Соседние клетки мира">${tiles.join('')}</div>
-      <div class="map-direction-hint"><span class="direction-dot"></span>Двигайся на 1 клетку за шаг · нажимай только подсвеченные соседние клетки</div>
+      <div class="map-view-heading"><div><strong>Обычный биом · 10 × 10 клеток</strong><span>Каждый квадрат — клетка; шаг только к соседней клетке</span></div><span class="map-scale">${formatCell(minX, minY)}—${formatCell(maxX, maxY)}</span></div>
+      <div class="world-map-grid" role="group" aria-label="Локальная карта 10 на 10 клеток">${tiles.join('')}</div>
+      <div class="map-direction-hint"><span class="direction-dot"></span>Облака белые и непроходимы пешком: для них нужен транспорт.</div>
     </section>
     <div class="map-legend card-flat">
       ${Object.entries(BIOME_INFO).map(([id, biome]) => `<span><i class="legend-swatch biome-${id}"></i>${biome.short}</span>`).join('')}
       <span><i class="legend-icon">✦</i>точка интереса</span><span><i class="legend-icon current-legend">●</i>ты</span>
     </div>
     ${currentPoi ? `<section class="card map-current-poi"><div class="map-poi-glyph">${currentPoi.glyph}</div><div class="map-poi-copy"><span class="eyebrow">точка на этой клетке</span><strong>${currentPoi.name}</strong><small>${currentPoi.description}</small></div><button class="btn btn-primary btn-small" data-action="interact-current" data-poi-id="${currentPoi.id}">${currentPoi.kind === 'npc' ? 'Поговорить' : 'Войти'}</button></section>` : ''}
-    <details class="world-overview card-flat"><summary><span><strong>Обзор всего мира</strong><small>10 × 10 секторов · каждый 10 × 10 клеток</small></span><span class="overview-toggle">＋</span></summary><div class="sector-grid" role="img" aria-label="Схема биомов всего мира">${sectorTiles}</div><div class="overview-caption"><span>● текущий сектор</span><span>100 × 100 клеток всего</span></div></details>
+    <details class="world-overview card-flat"><summary><span><strong>Карта биома · 100 × 100 клеток</strong><small>10 × 10 участков · каждый 10 × 10 клеток</small></span><span class="overview-toggle">＋</span></summary><div class="sector-grid" role="img" aria-label="Биом 100 на 100 клеток">${biomeTiles}</div><div class="overview-caption"><span>● текущий участок</span><span>Область ${worldRegionX + 1}:${worldRegionY + 1}</span></div></details>
+    <details class="world-overview card-flat"><summary><span><strong>Общая мировая карта · 1000 × 1000</strong><small>10 × 10 областей · каждая 100 × 100 клеток</small></span><span class="overview-toggle">＋</span></summary><div class="sector-grid" role="img" aria-label="Мировая карта 1000 на 1000 клеток">${worldTiles}</div><div class="overview-caption"><span>⌂ стартовый город Лиор</span><span>● текущая область</span></div></details>
     <div class="section-head map-poi-heading"><h2>Точки поблизости</h2><span class="badge">по координатам</span></div>
     <div class="map-poi-list">${nearbyPoints || '<div class="card-flat empty-note">В радиусе 10 клеток отмеченных точек пока нет.</div>'}</div>
-    <div class="notice map-rule-note">NPC и здания доступны только на своей клетке. Быстрого перемещения нет: время пути и переходы между биомами сохраняются в маршруте.</div>`;
+    <div class="notice map-rule-note">Стартовая точка — город Лиор. NPC доступны на своей клетке; переходы и время сохраняются локально. Облачные зоны блокируют пешее перемещение до получения транспорта.</div>`;
 }
 
 function renderWelcome() {
@@ -418,7 +551,7 @@ function renderWelcome() {
           <button class="btn btn-primary btn-block" data-action="start-create">Создать персонажа <span aria-hidden="true">→</span></button>
           <button class="btn btn-secondary btn-block" data-action="quick-demo">Посмотреть демо-героя</button>
         </div>
-        <p class="demo-note">Это только макет экранов: игровые данные не синхронизируются с сервером; позиция и незавершённый маршрут карты сохраняются на устройстве.</p>
+        <p class="demo-note">Это демонстрационный прототип без игрового сервера. Позиция, маршрут, игровые часы и сроки заданий сохраняются только на устройстве.</p>
       </div>
     </section>`;
 }
@@ -508,13 +641,29 @@ function renderHome() {
 
 function getQuestRows() {
   return [
-    { group: 'Основной сюжет', glyph: '✦', title: 'Город над облаками', desc: 'Помоги Иаре восстановить сигнальный узел.', status: '1/3', reward: '40 м' },
-    { group: 'Боевой класс', glyph: cls().glyph, title: cls().path, desc: cls().pathText, status: '0/4', reward: 'Опыт' },
-    { group: 'Профессия', glyph: professionIconMarkup(prof().id), title: prof().work, desc: prof().workText, status: 'Заказ', reward: 'Материалы' },
-    { group: 'Побочные', glyph: '☼', title: 'Пропавшая экспедиция', desc: 'Мейра ищет записи о грузе, не дошедшем до порта.', status: 'Новое', reward: '25 м' },
-    { group: 'Ежедневные', glyph: '◷', title: 'Поручения мастерской', desc: 'Помоги одной из служб Лиора выполнить небольшой заказ.', status: 'Ежедневно', reward: '20 м' },
-    { group: 'Еженедельные', glyph: '⚑', title: 'Сигнал из шторма', desc: 'Собери группу и проверь нестабильный маяк.', status: 'Еженедельно', reward: '100 м' }
+    { id: 'main-story', group: 'Основной сюжет', glyph: '✦', title: 'Город над облаками', desc: 'Помоги Иаре восстановить сигнальный узел.', status: '1/3', reward: '40 м', deadlineGameMinutes: 12 * 60 },
+    { id: 'class-path', group: 'Боевой класс', glyph: cls().glyph, title: cls().path, desc: cls().pathText, status: '0/4', reward: 'Опыт' },
+    { id: 'profession-order', group: 'Профессия', glyph: professionIconMarkup(prof().id), title: prof().work, desc: prof().workText, status: 'Заказ', reward: 'Материалы', deadlineGameMinutes: 8 * 60 },
+    { id: 'lost-expedition', group: 'Побочные', glyph: '☼', title: 'Пропавшая экспедиция', desc: 'Мейра ищет записи о грузе, не дошедшем до порта.', status: 'Новое', reward: '25 м', deadlineGameMinutes: 6 * 60 },
+    { id: 'daily-workshop', group: 'Ежедневные', glyph: '◷', title: 'Поручения мастерской', desc: 'Помоги одной из служб Лиора выполнить небольшой заказ.', status: 'Ежедневно', reward: '20 м', deadlineGameMinutes: 24 * 60 },
+    { id: 'storm-signal', group: 'Еженедельные', glyph: '⚑', title: 'Сигнал из шторма', desc: 'Собери группу и проверь нестабильный маяк.', status: 'Еженедельно', reward: '100 м', deadlineGameMinutes: 72 * 60 }
   ];
+}
+
+function questTimerMarkup(quest) {
+  if (!quest.deadlineGameMinutes) return '';
+  const timer = state.questTimers[quest.id];
+  const remaining = timer ? Number(timer.endsAtGame) - getGameTimestamp() : null;
+  const running = Number.isFinite(remaining) && remaining > 0;
+  const expired = Number.isFinite(remaining) && remaining <= 0;
+  const timeLabel = running
+    ? `${formatGameDuration(remaining)} игрового времени`
+    : expired
+      ? 'Срок истёк'
+      : `${formatGameDuration(quest.deadlineGameMinutes * 60000)} на выполнение`;
+  const action = running ? 'reset-quest-timer' : 'start-quest-timer';
+  const actionLabel = running ? 'Сбросить' : expired ? 'Заново' : 'Запустить';
+  return `<div class="quest-timer-row"><span class="quest-timer-icon" aria-hidden="true">◷</span><span class="quest-timer-copy"><small>Игровой срок</small><strong class="quest-timer-value${expired ? ' expired' : ''}" data-quest-timer="${quest.id}">${timeLabel}</strong></span><button class="quest-timer-button" data-action="${action}" data-quest-id="${quest.id}" aria-label="${actionLabel} игровой таймер: ${esc(quest.title)}">${actionLabel}</button></div>`;
 }
 
 function renderQuests() {
@@ -525,14 +674,36 @@ function renderQuests() {
     return q.group === state.questFilter;
   });
   screenEl.innerHTML = `
-    <div class="page-title-row"><div><div class="eyebrow">журнал героя</div><h1>Задания</h1><p>Сюжетные и ежедневные пути.</p></div><span class="badge badge-gold">6 открыто</span></div>
+    <div class="page-title-row"><div><div class="eyebrow">журнал героя</div><h1>Задания</h1><p>Сроки отсчитываются в игровом времени: 1 час МСК = 5 игровых часов.</p></div><span class="badge badge-gold">6 открыто</span></div>
     <div class="filter-row">${filters.map(f => `<button class="filter-chip ${state.questFilter === f ? 'active' : ''}" data-filter="${f}">${f}</button>`).join('')}</div>
     <div class="list-stack">${rows.map(q => `
-      <button class="card list-card" data-action="quest-detail" data-title="${q.title}">
+      <div class="quest-list-entry"><button class="card list-card" data-action="quest-detail" data-title="${esc(q.title)}">
         <div class="list-icon">${q.glyph}</div><div class="list-copy"><strong>${q.title}</strong><span>${q.desc}</span><div class="quest-meta" style="margin:7px 0 0"><span class="badge">${q.group}</span><span class="badge badge-teal">${q.status}</span></div></div><span class="list-side">${q.reward}</span>
-      </button>`).join('')}
+      </button>${questTimerMarkup(q)}</div>`).join('')}
     </div>
-    <div class="notice" style="margin-top:14px">Это примерный список. В прототипе фильтры меняют отображение, но задания не выдаются и не сохраняются.</div>`;
+    <div class="notice" style="margin-top:14px">Демо-таймеры показывают срок в игровом времени и сохраняются только на устройстве. Кнопка «Запустить» начинает локальный отсчёт; реальные игровые задания в прототипе не выдаются.</div>`;
+}
+
+function startQuestTimer(questId) {
+  const quest = getQuestRows().find(item => item.id === questId);
+  if (!quest || !quest.deadlineGameMinutes) return;
+  const startedAtGame = getGameTimestamp();
+  state.questTimers[questId] = {
+    startedAtGame,
+    endsAtGame: startedAtGame + quest.deadlineGameMinutes * 60000,
+    durationGameMinutes: quest.deadlineGameMinutes
+  };
+  saveQuestTimers();
+  render();
+  showToast(`Игровой срок запущен · ${formatGameDuration(quest.deadlineGameMinutes * 60000)}`);
+}
+
+function resetQuestTimer(questId) {
+  if (!state.questTimers[questId]) return;
+  delete state.questTimers[questId];
+  saveQuestTimers();
+  render();
+  showToast('Демо-таймер задания сброшен');
 }
 
 function renderCharacter() {
@@ -893,9 +1064,10 @@ let travelInterval;
 
 function beginMapTravel(targetX, targetY) {
   if (state.travel) { showToast('Подожди завершения текущего перехода'); return; }
-  if (targetX < 1 || targetX > MAP_CONFIG.width || targetY < 1 || targetY > MAP_CONFIG.height) return;
+  if (!Number.isInteger(targetX) || !Number.isInteger(targetY) || targetX < 1 || targetX > MAP_CONFIG.width || targetY < 1 || targetY > MAP_CONFIG.height) return;
   const distance = Math.abs(targetX - state.position.x) + Math.abs(targetY - state.position.y);
   if (distance !== 1) { showToast('За один шаг можно перейти только на соседнюю клетку'); return; }
+  if (isCloudBlocked(targetX, targetY, state.hasCloudTransport)) { showToast('Белые облака непроходимы пешком — нужен транспорт'); return; }
 
   const fromBiome = getBiomeId(state.position.x, state.position.y);
   const toBiome = getBiomeId(targetX, targetY);
@@ -903,10 +1075,11 @@ function beginMapTravel(targetX, targetY) {
   const gameMinutes = getMovementGameMinutes({ biomeTransition });
   const durationMs = getMovementDurationMs(biomeTransition);
   const startedAt = Date.now();
+  const endsAt = startedAt + durationMs;
   state.travel = {
     from: { ...state.position }, to: { x: targetX, y: targetY },
     fromBiome, toBiome, biomeTransition, durationMs, gameMinutes,
-    startedAt, endsAt: startedAt + durationMs
+    startedAt, endsAt, gameEndsAt: getGameTimestamp(endsAt)
   };
   saveWorldProgress();
   render();
@@ -954,14 +1127,14 @@ function visitPoi(id) {
     return;
   }
   switch (point.id) {
-    case 'iara': openModal('Иара Кест · клетка 10:50', '«Помоги мне проверить сигнальный узел. Ты пришёл в правильную точку Лиора — взаимодействие доступно только здесь.»'); break;
-    case 'smith': openModal('Кузница Торена Валя · клетка 9:50', 'Простая кирка — 20 м · рабочий молот — 20 м · короткий меч — 35 м · ремонт — 10 м. Покупки здесь не совершаются.'); break;
-    case 'merchant': openModal('Лавка Мейры Соль · клетка 10:49', 'Макет базового городского ассортимента. Торговые операции отключены.'); break;
-    case 'herbalist': openModal('Элна Рут · клетка 10:51', 'Базовые лечебные средства и травы. В этом макете магазин не продаёт предметы.'); break;
-    case 'guild': openModal('Гильдия «Крылья Эйры» · клетка 11:50', 'Ты вошёл в здание гильдии. Здесь будут состав, казна, городской совет и права участников.'); break;
-    case 'quest-board': go('quests'); showToast('Доска заданий Лиора · клетка 9:49'); break;
-    case 'market': go('market'); showToast('Торговая площадь · клетка 11:49'); break;
-    case 'beacon': openModal('Старый сигнальный маяк · клетка 30:50', 'Ты пересёк границу побережья и лесного тракта. Переходы между биомами занимают дополнительное время.'); break;
+    case 'iara': openModal(`Иара Кест · клетка ${formatCell(point.x, point.y)}`, '«Помоги мне проверить сигнальный узел. Ты пришёл в правильную точку Лиора — взаимодействие доступно только здесь.»'); break;
+    case 'smith': openModal(`Кузница Торена Валя · клетка ${formatCell(point.x, point.y)}`, 'Простая кирка — 20 м · рабочий молот — 20 м · короткий меч — 35 м · ремонт — 10 м. Покупки здесь не совершаются.'); break;
+    case 'merchant': openModal(`Лавка Мейры Соль · клетка ${formatCell(point.x, point.y)}`, 'Макет базового городского ассортимента. Торговые операции отключены.'); break;
+    case 'herbalist': openModal(`Элна Рут · клетка ${formatCell(point.x, point.y)}`, 'Базовые лечебные средства и травы. В этом макете магазин не продаёт предметы.'); break;
+    case 'guild': openModal(`Гильдия «Крылья Эйры» · клетка ${formatCell(point.x, point.y)}`, 'Ты вошёл в здание гильдии. Здесь будут состав, казна, городской совет и права участников.'); break;
+    case 'quest-board': go('quests'); showToast(`Доска заданий Лиора · клетка ${formatCell(point.x, point.y)}`); break;
+    case 'market': go('market'); showToast(`Торговая площадь · клетка ${formatCell(point.x, point.y)}`); break;
+    case 'beacon': openModal(`Старый сигнальный маяк · клетка ${formatCell(point.x, point.y)}`, 'Лесной тракт начинается за городской границей. Белые облака нельзя пересекать пешком без транспорта; переходы между биомами занимают дополнительное игровое время.'); break;
     default: openModal(point.name, point.description);
   }
 }
@@ -1002,6 +1175,9 @@ function updateNotificationRead(id) {
 document.addEventListener('click', (event) => {
   const nav = event.target.closest('[data-nav]');
   if (nav) { state.screen = nav.dataset.nav; render(); window.scrollTo(0, 0); return; }
+
+  const cloudBlocked = event.target.closest('[data-cloud-blocked]');
+  if (cloudBlocked) { showToast('Белые облака непроходимы пешком — нужен транспорт'); return; }
 
   const mapMove = event.target.closest('[data-map-move]');
   if (mapMove) { beginMapTravel(Number(mapMove.dataset.mapX), Number(mapMove.dataset.mapY)); return; }
@@ -1064,7 +1240,7 @@ document.addEventListener('click', (event) => {
     case 'go-class': go('choose-class'); break;
     case 'finish-intro': go('choose-profession'); break;
     case 'go-intro': go('intro'); break;
-    case 'finish-creation': go('home'); showToast('Демо-персонаж создан · без серверной синхронизации'); break;
+    case 'finish-creation': state.position = { ...LIOR_CITY.start }; state.travel = null; saveWorldProgress(); go('home'); showToast('Демо-персонаж создан · Лиор · без серверной синхронизации'); break;
     case 'open-quests': go('quests'); break;
     case 'open-character': go('character'); break;
     case 'open-city': go('city'); break;
@@ -1118,7 +1294,9 @@ document.addEventListener('click', (event) => {
     case 'guild-details': visitPoi('guild'); break;
     case 'friends': openModal('Игроки', 'Макет списка друзей и недавних помощников.'); break;
     case 'message': showToast('Открытие личных сообщений — демонстрация'); break;
-    case 'quest-detail': openModal(actionButton.dataset.title || 'Задание', 'Здесь будут описание, цели, награды и кнопка начала. Демонстрационное задание не влияет на прогресс.'); break;
+    case 'quest-detail': openModal(actionButton.dataset.title || 'Задание', 'Здесь показаны цель, награда и игровой срок. Сроки демонстрационных поручений отсчитываются по игровым часам: один час МСК равен пяти часам в игре.'); break;
+    case 'start-quest-timer': startQuestTimer(actionButton.dataset.questId); break;
+    case 'reset-quest-timer': resetQuestTimer(actionButton.dataset.questId); break;
     case 'create-listing': openModal('Выставить товар', 'Форма заявки покажет предмет, количество, срок, комиссию 5% и доступность офлайн-магазина. В прототипе заявка не создаётся.'); break;
     case 'buy-item': openModal('Карточка товара', 'Здесь будут продавец, цена, качество предмета и подтверждение сделки. Покупка отключена.'); break;
     case 'filter-market': showToast('Фильтры рынка показаны в макете'); break;
