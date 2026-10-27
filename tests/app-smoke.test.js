@@ -10,7 +10,8 @@ function bootPrototype(androidBridge) {
   const elements = new Map();
   const listeners = {};
   const makeElement = () => ({
-    innerHTML: '', className: '', hidden: false, style: {}, dataset: {}, textContent: '',
+    innerHTML: '', className: '', hidden: false, style: {}, dataset: {}, textContent: '', value: '', scrollHeight: 0, scrollTop: 0,
+    focus() {},
     classList: { add() {}, remove() {}, toggle() {} }
   });
   const document = {
@@ -50,6 +51,12 @@ function bootPrototype(androidBridge) {
   return {
     screen: elements.get('screen'),
     window: sandbox,
+    stored(key) { return storage.get(key); },
+    input(id, value) {
+      const element = document.getElementById(id);
+      element.value = value;
+      if (listeners.input) listeners.input({ target: element });
+    },
     click(selector, dataset) {
       const element = { dataset };
       const target = { closest(query) { return query === selector ? element : null; } };
@@ -87,6 +94,32 @@ test('victory awards local marks that appear in the wallet', () => {
   assert.match(app.screen.innerHTML, /Сигнал очищен/);
   app.click('[data-nav]', { nav: 'home' });
   assert.match(app.screen.innerHTML, /✧ 112/);
+});
+
+test('communication hub separates guild, community, and support chats and saves local messages', () => {
+  const app = bootPrototype();
+  app.click('[data-action]', { action: 'quick-demo' });
+  app.click('[data-action]', { action: 'open-social' });
+  assert.match(app.screen.innerHTML, /Связь/);
+  assert.match(app.screen.innerHTML, /Гильдия «Крылья Эйры»/);
+  assert.match(app.screen.innerHTML, /Объявления/);
+
+  app.click('[data-communication-tab]', { communicationTab: 'community' });
+  assert.match(app.screen.innerHTML, /Общение всех игроков мира/);
+  app.click('[data-communication-channel]', { communicationChannel: 'group' });
+  assert.match(app.screen.innerHTML, /Поиск группы/);
+  assert.match(app.screen.innerHTML, /Ищу Следопыта/);
+
+  app.input('communication-message-input', 'Нужен Следопыт для похода к маяку');
+  app.click('[data-action]', { action: 'send-communication-message' });
+  assert.match(app.screen.innerHTML, /Нужен Следопыт для похода к маяку/);
+  const saved = JSON.parse(app.stored('echo-astra.communication-v1'));
+  assert.equal(saved.community.group.at(-1).text, 'Нужен Следопыт для похода к маяку');
+
+  app.click('[data-communication-tab]', { communicationTab: 'support' });
+  assert.match(app.screen.innerHTML, /Центр помощи/);
+  assert.match(app.screen.innerHTML, /Техническая проблема/);
+  assert.match(app.screen.innerHTML, /не будет отправлено оператору/);
 });
 
 test('Android updater downloads the checked release in-app and renders progress', () => {
