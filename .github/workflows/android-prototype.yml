@@ -90,7 +90,7 @@ jobs:
           done
 
       - name: Warn when stable APK signing is not configured
-        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/d3628144-rpggameanime' && (env.ANDROID_SIGNING_KEYSTORE_BASE64 == '' || env.ANDROID_SIGNING_KEYSTORE_PASSWORD == '')
+        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/be2b6726-rpggameanime' && (env.ANDROID_SIGNING_KEYSTORE_BASE64 == '' || env.ANDROID_SIGNING_KEYSTORE_PASSWORD == '')
         run: echo 'Stable APK signing secrets are missing; this debug build will not be published as a versioned release.'
 
       - name: Publish APK artifact
@@ -102,7 +102,7 @@ jobs:
           retention-days: 30
 
       - name: Save APK and build manifest on the Arena branch
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/arena/d3628144-rpggameanime' && env.ANDROID_SIGNING_KEYSTORE_BASE64 != '' && env.ANDROID_SIGNING_KEYSTORE_PASSWORD != ''
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/arena/be2b6726-rpggameanime' && env.ANDROID_SIGNING_KEYSTORE_BASE64 != '' && env.ANDROID_SIGNING_KEYSTORE_PASSWORD != ''
         env:
           VERSION_NAME: 0.2.${{ github.run_number }}
         run: |
@@ -145,7 +145,7 @@ jobs:
           fi
 
       - name: Publish a versioned GitHub release for existing clients
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/arena/d3628144-rpggameanime' && env.ANDROID_SIGNING_KEYSTORE_BASE64 != '' && env.ANDROID_SIGNING_KEYSTORE_PASSWORD != ''
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/arena/be2b6726-rpggameanime' && env.ANDROID_SIGNING_KEYSTORE_BASE64 != '' && env.ANDROID_SIGNING_KEYSTORE_PASSWORD != ''
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION_NAME: 0.2.${{ github.run_number }}

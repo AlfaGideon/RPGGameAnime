@@ -294,7 +294,7 @@ function saveQuestTimers() {
 }
 
 const UPDATE_REPOSITORY = 'AlfaGideon/RPGGameAnime';
-const UPDATE_BRANCH = 'arena/d3628144-rpggameanime';
+const UPDATE_BRANCH = 'arena/be2b6726-rpggameanime';
 const BUILD_MANIFEST_API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/contents/apk-output/version.json?ref=${encodeURIComponent(UPDATE_BRANCH)}`;
 const RELEASES_API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/releases/latest`;
 const RELEASES_PAGE = `https://github.com/${UPDATE_REPOSITORY}/releases`;
@@ -369,6 +369,110 @@ function saveAutoUpdatePreference(enabled) {
   catch (error) { /* Private browsing and file:// storage may be unavailable. */ }
 }
 
+const COMMUNICATION_STORAGE_KEY = 'echo-astra.communication-v1';
+const COMMUNICATION_SECTIONS = {
+  guild: {
+    label: 'Гильдия', icon: '⌘', summary: '12 участников', description: 'Гильдия «Крылья Эйры» · 4 онлайн',
+    channels: [
+      { id: 'general', label: 'Общий чат', marker: '#' },
+      { id: 'announcements', label: 'Объявления', marker: '⚑' },
+      { id: 'council', label: 'Совет', marker: '♜' }
+    ]
+  },
+  community: {
+    label: 'Сообщество', icon: '✦', summary: 'Общий чат мира', description: 'Общение всех игроков мира',
+    channels: [
+      { id: 'world', label: 'Общий чат', marker: '#' },
+      { id: 'group', label: 'Поиск группы', marker: '⚔' },
+      { id: 'trade', label: 'Обмен и рынок', marker: '◈' }
+    ]
+  },
+  support: {
+    label: 'Поддержка', icon: '✉', summary: 'Вопросы и помощь', description: 'Личный канал службы поддержки',
+    channels: [
+      { id: 'ticket', label: 'Обращение #EA-001', marker: '?' }
+    ]
+  }
+};
+
+const DEFAULT_COMMUNICATION_MESSAGES = {
+  guild: {
+    general: [
+      { id: 'guild-general-1', author: 'Ливен', role: 'Мастер гильдии', avatar: 'Л', time: '18:42', text: 'Сегодня собираемся у северных ворот. Проверим маршрут к старому маяку.' },
+      { id: 'guild-general-2', author: 'Роан', role: 'Следопыт · Рудокоп', avatar: 'Р', time: '18:46', text: 'Буду через десять минут. Возьму карту перевалов.' },
+      { id: 'guild-general-3', author: 'Мика', role: 'Хранитель · Травник', avatar: 'М', time: '18:51', text: 'Подготовлю лечебные настои для группы.' }
+    ],
+    announcements: [
+      { id: 'guild-announcement-1', author: 'Крылья Эйры', role: 'Объявление гильдии', avatar: '⌘', time: '17:20', text: 'В субботу — общее исследование побережья. Запись открыта всем участникам.' },
+      { id: 'guild-announcement-2', author: 'Ливен', role: 'Мастер гильдии', avatar: 'Л', time: '16:05', text: 'Пожалуйста, отмечайте расход материалов в журнале склада.' }
+    ],
+    council: [
+      { id: 'guild-council-1', author: 'Веста', role: 'Совет гильдии', avatar: 'В', time: '15:12', text: 'На голосовании — расширение мастерской. Обсудим нужные ресурсы.' },
+      { id: 'guild-council-2', author: 'Ливен', role: 'Мастер гильдии', avatar: 'Л', time: '15:18', text: 'Оставьте предложения до конца игрового дня.' }
+    ]
+  },
+  community: {
+    world: [
+      { id: 'world-1', author: 'Вестник мира', role: 'Общий канал', avatar: '✦', time: '18:30', text: 'Добро пожаловать в общий чат Эхо Астры. Здесь встречаются путешественники со всего мира.' },
+      { id: 'world-2', author: 'Нира', role: 'Страж · Строитель', avatar: 'Н', time: '18:39', text: 'Кто-нибудь уже нашёл тропу к западному маяку?' },
+      { id: 'world-3', author: 'Торен', role: 'Кузнец', avatar: 'Т', time: '18:47', text: 'Ищу напарника для испытания новой кирки в шахте.' }
+    ],
+    group: [
+      { id: 'group-1', author: 'Элна', role: 'Хранитель · Травник', avatar: 'Э', time: '18:22', text: 'Ищу Следопыта для короткой разведки у облачного перевала.' },
+      { id: 'group-2', author: 'Роан', role: 'Следопыт · Рудокоп', avatar: 'Р', time: '18:34', text: 'Нужна ещё пара игроков в поход к маяку. Старт из Лиора.' }
+    ],
+    trade: [
+      { id: 'trade-1', author: 'Торен', role: 'Кузнец · Лиор', avatar: 'Т', time: '18:16', text: 'Обменяю железную руду на древесину для мастерской.' },
+      { id: 'trade-2', author: 'Мика', role: 'Травник · Лиор', avatar: 'М', time: '18:25', text: 'Куплю лиорскую мяту. Напишите в личные сообщения.' }
+    ]
+  },
+  support: {
+    ticket: [
+      { id: 'support-1', author: 'Центр поддержки', role: 'Демонстрационный ответ', avatar: 'Э', time: '09:15', text: 'Здравствуйте! Напишите вопрос ниже — в этом прототипе переписка сохранится только на вашем устройстве.' }
+    ]
+  }
+};
+
+function cloneDefaultCommunicationMessages() {
+  return JSON.parse(JSON.stringify(DEFAULT_COMMUNICATION_MESSAGES));
+}
+
+function readCommunicationMessages() {
+  const defaults = cloneDefaultCommunicationMessages();
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(COMMUNICATION_STORAGE_KEY) || 'null');
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return defaults;
+    for (const [sectionId, section] of Object.entries(COMMUNICATION_SECTIONS)) {
+      for (const channel of section.channels) {
+        const savedMessages = saved[sectionId] && saved[sectionId][channel.id];
+        if (!Array.isArray(savedMessages)) continue;
+        defaults[sectionId][channel.id] = savedMessages.slice(-100).map((message, index) => {
+          if (!message || typeof message !== 'object') return null;
+          const author = String(message.author || 'Игрок').slice(0, 40);
+          const text = String(message.text || '').trim().slice(0, 500);
+          if (!text) return null;
+          return {
+            id: String(message.id || `${sectionId}-${channel.id}-${index}`).slice(0, 80),
+            author,
+            role: String(message.role || 'Игрок').slice(0, 48),
+            avatar: String(message.avatar || author.charAt(0)).slice(0, 2),
+            time: String(message.time || '--:--').slice(0, 8),
+            text,
+            self: message.self === true,
+            system: message.system === true
+          };
+        }).filter(Boolean);
+      }
+    }
+    return defaults;
+  } catch (error) { return defaults; }
+}
+
+function saveCommunicationMessages() {
+  try { window.localStorage.setItem(COMMUNICATION_STORAGE_KEY, JSON.stringify(state.communicationMessages)); }
+  catch (error) { /* Keep the chat usable if local storage is unavailable. */ }
+}
+
 const navItems = [
   { id: 'home', label: 'Главная', icon: '⌂' },
   { id: 'map', label: 'Карта', icon: '⌖' },
@@ -409,6 +513,10 @@ const state = {
   marketTab: 'Фиксированная цена',
   characterTab: 'Обзор',
   cityMode: 'lior',
+  communicationTab: 'guild',
+  communicationChannel: 'general',
+  communicationSupportTopic: 'Общий вопрос',
+  communicationMessages: readCommunicationMessages(),
   position: initialWorldProgress.position,
   travel: initialWorldProgress.travel,
   hasCloudTransport: false,
@@ -793,7 +901,7 @@ function renderHome() {
     <div class="action-row">
       <button class="card action-tile" data-action="open-combat"><span class="tile-icon">⚔</span><strong>Испытание</strong><span>Пошаговый бой с Эхо</span></button>
       <button class="card action-tile" data-action="open-market"><span class="tile-icon">◈</span><strong>Рынок</strong><span>Заказы и товары</span></button>
-      <button class="card action-tile" data-action="open-social"><span class="tile-icon">⌘</span><strong>Помощь</strong><span>Найти игрока</span></button>
+      <button class="card action-tile" data-action="open-social"><span class="tile-icon">✉</span><strong>Связь</strong><span>Чаты и поддержка</span></button>
     </div>
     <div class="notice" style="margin-top:15px">Карта, часы и пошаговый бой работают локально на устройстве. Сетевые функции, постоянная экономика и общий игровой прогресс пока не реализованы.</div>`;
 }
@@ -1161,7 +1269,7 @@ function renderCity() {
       </div>
       <div class="section-head"><h2>Истории жителей</h2><span class="badge">7 персонажей</span></div>
       <div class="npc-story-grid">${NPC_PROFILES.map(npc => `<button class="card npc-story-card" data-action="npc-profile" data-npc-id="${npc.id}"><img class="npc-story-art${npc.mirrorArt ? ' is-mirrored' : ''}" src="${npc.art}" alt="" loading="lazy"><span class="npc-story-copy"><strong>${esc(npc.name)}</strong><small>${esc(npc.role)}</small><span>${esc(npc.story)}</span></span></button>`).join('')}</div>
-      <div class="section-head"><h2>Городские службы</h2></div><div class="action-row"><button class="card action-tile" data-action="open-quests"><span class="tile-icon">✦</span><strong>Задания</strong><span>Доска Лиора</span></button><button class="card action-tile" data-action="open-social"><span class="tile-icon">⌘</span><strong>Группа</strong><span>Найти помощь</span></button><button class="card action-tile" data-action="open-market"><span class="tile-icon">◈</span><strong>Рынок</strong><span>Товары города</span></button></div>` : `
+      <div class="section-head"><h2>Городские службы</h2></div><div class="action-row"><button class="card action-tile" data-action="open-quests"><span class="tile-icon">✦</span><strong>Задания</strong><span>Доска Лиора</span></button><button class="card action-tile" data-action="open-social"><span class="tile-icon">✉</span><strong>Связь</strong><span>Чаты игроков</span></button><button class="card action-tile" data-action="open-market"><span class="tile-icon">◈</span><strong>Рынок</strong><span>Товары города</span></button></div>` : `
       <div class="card card-pad"><div class="city-status"><div class="guild-emblem">⌂</div><div class="city-progress"><strong>Гильдия «Крылья Эйры»</strong><div class="small muted" style="margin-top:4px">Основано 5 игроками · совет 2/3</div></div><span class="badge badge-teal">Ранг 1</span></div><div class="guild-location-row"><span class="small muted">Здание на карте · ${formatCell(getPoi('guild').x,getPoi('guild').y)}</span><button class="text-action" data-action="visit-poi" data-poi-id="guild">К гильдии →</button></div></div>
       <div class="section-head"><h2>Постройки</h2><button data-action="building-wizard">+ Проект</button></div>
       <div class="building-grid">
@@ -1175,21 +1283,90 @@ function renderCity() {
       <div class="notice" style="margin-top:12px">В поздних городах кузницы, фермы и лавки принадлежат игрокам. Эти карточки показывают макет, не сохраняют вложения.</div>`}`;
 }
 
-function renderSocial() {
-  const recentNotifications = state.notifications.slice(0, 2);
-  screenEl.innerHTML = `
-    <div class="page-title-row"><div><div class="eyebrow">игроки рядом</div><h1>Связь</h1><p>Группа, гильдия и совместные поручения.</p></div><span class="badge badge-teal">3 онлайн</span></div>
-    <div class="card social-header"><div class="guild-emblem">⌘</div><div><strong>Гильдия «Крылья Эйры»</strong><div class="small muted" style="margin-top:4px">12 участников · город Лиор</div></div><button class="text-action" data-action="visit-poi" data-poi-id="guild">К гильдии →</button></div>
-    <div class="card player-meeting-card"><div><strong>Сцена встречи игроков</strong><span>Посетитель слева · хозяин справа · зеркальное направление по роли.</span></div><button class="btn btn-secondary btn-small" data-action="show-player-meeting">Показать демо</button></div>
-    <div class="section-head"><h2>Запросы на помощь</h2><button data-action="create-order">Создать</button></div>
-    <div class="list-stack">
-      <div class="card card-pad"><div class="quest-meta"><span class="badge badge-gold profession-badge-inline">${professionIconMarkup('blacksmith')}ПРОФЕССИЯ: КУЗНЕЦ</span><span class="badge badge-rose">Нужен Рудокоп</span></div><h3>Материал для маяка</h3><p class="small">Нужна руда для детали сигнального узла.</p><button class="btn btn-primary btn-small" data-action="help-order">Откликнуться</button></div>
-      <div class="card card-pad"><div class="quest-meta"><span class="badge badge-teal">БОЕВОЙ КЛАСС</span><span class="badge">Нужен Следопыт</span></div><h3>Проверка маршрута</h3><p class="small">Помоги разведать путь к старому маяку.</p><button class="btn btn-secondary btn-small" data-action="help-order">Посмотреть</button></div>
+function renderCommunicationMessage(message) {
+  const isSelf = message.self === true || message.author === state.characterName;
+  if (message.system) return `<div class="communication-system-message">${esc(message.text)}</div>`;
+  return `<article class="communication-message ${isSelf ? 'is-self' : ''}">
+    ${isSelf ? '' : `<span class="communication-message-avatar">${esc(message.avatar || message.author.charAt(0))}</span>`}
+    <div class="communication-message-content">
+      <div class="communication-message-meta"><strong>${isSelf ? 'Вы' : esc(message.author)}</strong><span>${esc(message.role)}</span><time>${esc(message.time)}</time></div>
+      <p class="communication-message-bubble">${esc(message.text)}</p>
     </div>
-    <div class="section-head"><h2>Недавние помощники</h2><button data-action="friends">Все</button></div>
-    <div class="card card-pad">${[['🛡','Ливен','Страж · Строитель'],['⛏','Роан','Следопыт · Рудокоп'],['✿','Мика','Хранитель · Травник']].map(x=>`<div class="member-row"><div class="member-avatar">${x[0]}</div><div class="member-info"><strong>${x[1]}</strong><span>${x[2]}</span></div><span class="online-dot"></span><button class="icon-button" data-action="message">✉</button></div>`).join('')}</div>
-    <div class="section-head"><h2>Недавние уведомления</h2><button data-action="notifications">Все уведомления →</button></div>
-    ${recentNotifications.length ? `<div class="list-stack">${recentNotifications.map(item=>`<button class="card list-card social-notification ${item.unread?'unread':''}" data-action="notifications"><div class="list-icon">${item.glyph}</div><div class="list-copy"><strong>${esc(item.title)}</strong><span>${esc(item.text)}</span></div><span class="badge ${item.unread?'badge-teal':''}">${item.unread?'Новое':esc(item.time)}</span></button>`).join('')}</div>` : '<div class="card-flat empty-note">Новых уведомлений нет.</div>'}`;
+    ${isSelf ? '<span class="communication-message-avatar communication-self-avatar">А</span>' : ''}
+  </article>`;
+}
+
+function sendCommunicationMessage() {
+  const input = document.getElementById('communication-message-input');
+  const text = String(input && input.value || '').trim().slice(0, 500);
+  if (!text) { showToast('Напиши сообщение перед отправкой'); return; }
+  const sectionId = COMMUNICATION_SECTIONS[state.communicationTab] ? state.communicationTab : 'guild';
+  const section = COMMUNICATION_SECTIONS[sectionId];
+  const channel = section.channels.find(item => item.id === state.communicationChannel) || section.channels[0];
+  const messages = state.communicationMessages[sectionId][channel.id];
+  const role = sectionId === 'support'
+    ? `Обращение · ${state.communicationSupportTopic}`
+    : sectionId === 'guild' ? 'Участник гильдии' : 'Путешественник';
+  messages.push({
+    id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    author: state.characterName || 'Астра', role, avatar: 'А',
+    time: formatMoscowClock().slice(0, 5), text, self: true
+  });
+  if (messages.length > 100) messages.splice(0, messages.length - 100);
+  saveCommunicationMessages();
+  renderSocial();
+  const messageList = document.getElementById('communication-message-list');
+  if (messageList) messageList.scrollTop = messageList.scrollHeight;
+  const nextInput = document.getElementById('communication-message-input');
+  if (nextInput && typeof nextInput.focus === 'function') nextInput.focus();
+}
+
+function renderSocial() {
+  const sectionId = COMMUNICATION_SECTIONS[state.communicationTab] ? state.communicationTab : 'guild';
+  const section = COMMUNICATION_SECTIONS[sectionId];
+  let channel = section.channels.find(item => item.id === state.communicationChannel);
+  if (!channel) {
+    channel = section.channels[0];
+    state.communicationChannel = channel.id;
+  }
+  const messages = state.communicationMessages[sectionId][channel.id] || [];
+  const categoryTabs = Object.entries(COMMUNICATION_SECTIONS).map(([id, item]) => `<button type="button" role="tab" class="communication-category-tab ${id === sectionId ? 'active' : ''}" data-communication-tab="${id}" aria-selected="${id === sectionId}">
+    <span class="communication-category-icon">${item.icon}</span><span class="communication-category-copy"><strong>${item.label}</strong><small>${item.summary}</small></span>
+  </button>`).join('');
+  const channelTabs = section.channels.map(item => `<button type="button" role="tab" class="communication-channel-tab ${item.id === channel.id ? 'active' : ''}" data-communication-channel="${item.id}" aria-selected="${item.id === channel.id}"><span>${item.marker}</span>${item.label}</button>`).join('');
+  const topicOptions = ['Вопрос по игре', 'Техническая проблема', 'Аккаунт и прогресс'];
+  const supportTopics = sectionId === 'support' ? `<div class="communication-support-topics"><span>Тема:</span>${topicOptions.map(topic => `<button type="button" class="communication-topic-chip ${state.communicationSupportTopic === topic ? 'active' : ''}" data-support-topic="${topic}" aria-pressed="${state.communicationSupportTopic === topic}">${topic}</button>`).join('')}</div>` : '';
+  const contextMarkup = sectionId === 'guild'
+    ? `<div class="communication-context-card"><div class="guild-emblem">⌂</div><div><strong>Гильдия «Крылья Эйры»</strong><span>Лиор · 12 участников · 4 онлайн</span></div><button class="text-action" data-action="visit-poi" data-poi-id="guild">На карте →</button></div>`
+    : sectionId === 'community'
+      ? `<div class="section-head communication-extra-heading"><h2>Запросы сообщества</h2><button data-action="create-order">+ Создать</button></div><div class="communication-request-list">
+          <article class="card communication-request-card"><div class="communication-request-icon">⚒</div><div class="communication-request-copy"><strong>Материал для маяка</strong><span>Нужен Рудокоп · кузнец ищет руду для сигнального узла.</span></div><button class="btn btn-secondary btn-small" data-action="help-order">Откликнуться</button></article>
+          <article class="card communication-request-card"><div class="communication-request-icon">⌖</div><div class="communication-request-copy"><strong>Проверка маршрута</strong><span>Нужен Следопыт · группа собирается у западных ворот.</span></div><button class="btn btn-secondary btn-small" data-action="help-order">Посмотреть</button></article>
+        </div>`
+      : `<div class="communication-support-summary"><span class="communication-support-mark">?</span><div><strong>Центр помощи</strong><span>Выбери тему и опиши вопрос в сообщении ниже.</span></div><span class="badge badge-gold">ДЕМО</span></div>`;
+  const demoNote = sectionId === 'support'
+    ? 'Демонстрационный центр поддержки: сообщение сохранится на этом устройстве и не будет отправлено оператору, пока не подключён игровой сервер.'
+    : 'Демо-режим: сообщения сохраняются только на этом устройстве и не видны другим игрокам, пока не подключён игровой сервер.';
+  const placeholder = sectionId === 'support'
+    ? 'Опиши вопрос для службы поддержки…'
+    : sectionId === 'guild' ? 'Сообщение для участников гильдии…' : 'Сообщение для игрового сообщества…';
+
+  screenEl.innerHTML = `
+    <div class="page-title-row"><div><div class="eyebrow">центр общения</div><h1>Связь</h1><p>Чаты гильдии, игрового мира и службы поддержки.</p></div><span class="badge badge-teal">3 РАЗДЕЛА</span></div>
+    <div class="communication-category-grid" role="tablist" aria-label="Разделы связи">${categoryTabs}</div>
+    ${contextMarkup}
+    <section class="card communication-chat-card" aria-label="${esc(section.label)} · ${esc(channel.label)}">
+      <div class="communication-chat-header"><span class="communication-chat-symbol">${channel.marker}</span><div class="communication-chat-heading"><span class="eyebrow">${esc(section.label)}</span><h2>${esc(channel.label)}</h2><small>${esc(section.description)}</small></div><span class="communication-live-badge"><i></i>${sectionId === 'support' ? 'ЛИЧНО' : 'ДЕМО'}</span></div>
+      <div class="communication-channel-list" role="tablist" aria-label="Каналы ${esc(section.label)}">${channelTabs}</div>
+      ${supportTopics}
+      <div class="communication-message-list" id="communication-message-list" role="log" aria-live="polite" aria-label="Сообщения: ${esc(channel.label)}">
+        ${messages.length ? messages.map(renderCommunicationMessage).join('') : '<div class="communication-empty"><span>✦</span><strong>Пока тихо</strong><small>Начни беседу первым.</small></div>'}
+      </div>
+      <div class="communication-composer"><textarea id="communication-message-input" rows="2" maxlength="500" placeholder="${placeholder}" aria-label="${placeholder}"></textarea><button type="button" class="communication-send-button" data-action="send-communication-message" aria-label="Отправить сообщение">➤</button></div>
+      <div class="communication-composer-footer"><span>Enter — отправить · Shift+Enter — новая строка</span><span id="communication-char-count">0/500</span></div>
+    </section>
+    <div class="communication-demo-note"><span>ⓘ</span><span>${demoNote}</span></div>
+    ${sectionId === 'guild' ? '<div class="player-meeting-card card"><div><strong>Встреча в мире</strong><span>Посетитель слева · хозяин справа · направление зависит от роли.</span></div><button class="btn btn-secondary btn-small" data-action="show-player-meeting">Демо</button></div>' : ''}`;
 }
 
 const marketItems = [
@@ -1541,6 +1718,28 @@ document.addEventListener('click', (event) => {
     return;
   }
 
+  const communicationTab = event.target.closest('[data-communication-tab]');
+  if (communicationTab && COMMUNICATION_SECTIONS[communicationTab.dataset.communicationTab]) {
+    state.communicationTab = communicationTab.dataset.communicationTab;
+    state.communicationChannel = COMMUNICATION_SECTIONS[state.communicationTab].channels[0].id;
+    renderSocial();
+    return;
+  }
+
+  const communicationChannel = event.target.closest('[data-communication-channel]');
+  if (communicationChannel && COMMUNICATION_SECTIONS[state.communicationTab].channels.some(item => item.id === communicationChannel.dataset.communicationChannel)) {
+    state.communicationChannel = communicationChannel.dataset.communicationChannel;
+    renderSocial();
+    return;
+  }
+
+  const supportTopic = event.target.closest('[data-support-topic]');
+  if (supportTopic) {
+    state.communicationSupportTopic = supportTopic.dataset.supportTopic;
+    renderSocial();
+    return;
+  }
+
   const nav = event.target.closest('[data-nav]');
   if (nav) { state.screen = nav.dataset.nav; render(); window.scrollTo(0, 0); return; }
 
@@ -1702,7 +1901,8 @@ document.addEventListener('click', (event) => {
     case 'help-order': showToast('Отклик записан только в демо'); break;
     case 'guild-details': visitPoi('guild'); break;
     case 'friends': openModal('Игроки', 'Макет списка друзей и недавних помощников.'); break;
-    case 'message': showToast('Открытие личных сообщений — демонстрация'); break;
+    case 'message': showToast('Личные сообщения появятся в центре связи'); break;
+    case 'send-communication-message': sendCommunicationMessage(); break;
     case 'quest-detail': openModal(actionButton.dataset.title || 'Задание', 'Здесь показаны цель, награда и игровой срок. Сроки демонстрационных поручений отсчитываются по игровым часам: один час МСК равен пяти часам в игре.'); break;
     case 'start-quest-timer': startQuestTimer(actionButton.dataset.questId); break;
     case 'reset-quest-timer': resetQuestTimer(actionButton.dataset.questId); break;
@@ -1718,10 +1918,18 @@ document.addEventListener('click', (event) => {
 
 document.addEventListener('input', (event) => {
   if (event.target.id === 'hero-name') state.characterName = event.target.value;
+  if (event.target.id === 'communication-message-input') {
+    const counter = document.getElementById('communication-char-count');
+    if (counter) counter.textContent = `${String(event.target.value || '').length}/500`;
+  }
 });
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') closeModal();
+  if (event.key === 'Enter' && !event.shiftKey && event.target && event.target.id === 'communication-message-input') {
+    event.preventDefault();
+    sendCommunicationMessage();
+  }
 });
 
 render();
