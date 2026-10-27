@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 176 176" role="img" aria-label="Портрет Стража">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#28536b"/><stop offset="1" stop-color="#101c35"/></linearGradient>
+    <radialGradient id="halo"><stop stop-color="#75e5d4" stop-opacity=".6"/><stop offset="1" stop-color="#75e5d4" stop-opacity="0"/></radialGradient>
+    <linearGradient id="robe" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#2c606c"/><stop offset="1" stop-color="#183549"/></linearGradient>
+    <clipPath id="portraitClip"><circle cx="88" cy="88" r="84"/></clipPath>
+  </defs>
+  <g clip-path="url(#portraitClip)">
+    <rect width="176" height="176" fill="url(#bg)"/>
+    <circle cx="88" cy="73" r="68" fill="url(#halo)"/>
+    <path d="M12 60a76 76 0 0 1 145-20M23 37l4 1m116 12 5-2M35 20l4 4m88 2 4-4" fill="none" stroke="#75e5d4" stroke-opacity=".6" stroke-width="2"/>
+    <circle cx="32" cy="75" r="2" fill="#fff4d6"/><circle cx="143" cy="84" r="2" fill="#fff4d6"/><circle cx="45" cy="46" r="1.5" fill="#fff"/><circle cx="126" cy="52" r="1.5" fill="#fff"/>
+    <path d="M20 182c4-30 20-48 47-56l21-7 21 7c27 8 43 26 47 56z" fill="url(#robe)" stroke="#f3cc76" stroke-opacity=".68" stroke-width="2"/>
+    <path d="M68 113h40v28c-7 9-13 12-20 12s-13-3-20-12z" fill="#f2d1b6"/>
+    <path d="M48 79c-4-35 10-61 39-64 29-3 51 18 44 58l-6 35c-3 17-17 30-36 30-22 0-37-17-39-38z" fill="#829ca9"/>
+    <path d="M54 77c0-28 11-44 34-44 23 0 35 16 35 44v19c0 22-15 37-35 37S54 118 54 96z" fill="#f2d1b6"/>
+    <path d="M48 67 C49 36 64 19 88 18 C113 18 132 35 130 64 C119 54 111 47 103 38 C89 56 70 66 48 67 Z" fill="#d5e5e1"/>
+    <path d="M54 65c-4 15-3 31 2 43M122 64c4 15 3 30-2 43" fill="none" stroke="#829ca9" stroke-width="8" stroke-linecap="round"/>
+    <path d="M80 29l8-10 8 10-8 9z" fill="#f3cc76" stroke="#fff0b7" stroke-width="2"/><path d="M66 40q22 8 44 0" fill="none" stroke="#f3cc76" stroke-width="3"/>
+    <path d="M69 86q7-5 14 0M94 86q7-5 14 0" fill="none" stroke="#574451" stroke-width="2.5" stroke-linecap="round"/>
+    <ellipse cx="77" cy="94" rx="3" ry="4" fill="#28364a"/><ellipse cx="100" cy="94" rx="3" ry="4" fill="#28364a"/>
+    <circle cx="78" cy="93" r="1" fill="#fff"/><circle cx="101" cy="93" r="1" fill="#fff"/>
+    <path d="M87 95l-2 12 5 1" fill="none" stroke="#c18b7c" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M82 114q6 5 12 0" fill="none" stroke="#a75e68" stroke-width="2" stroke-linecap="round"/>
+    <path d="M65 139l23 16 23-16-7-10H72z" fill="#f3cc76" fill-opacity=".84" stroke="#fff0c9" stroke-opacity=".65" stroke-width="2"/>
+    <path d="M88 145l7 7-7 8-7-8z" fill="#fff3cb" fill-opacity=".9"/>
+  </g>
+  <circle cx="88" cy="88" r="83" fill="none" stroke="#75e5d4" stroke-opacity=".62" stroke-width="2"/>
+</svg>

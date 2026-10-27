@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Травник">
+  <path d="M32 52V30" stroke="#82D7C1" stroke-width="4" stroke-linecap="round"/>
+  <path d="M32 38C19 39 12 32 13 22c11-2 19 4 19 16Zm0-8c0-11 7-18 18-18 2 11-5 19-18 20Z" stroke="#82D7C1" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m20 20 9 12m17-3L35 39" stroke="#D7FFF0" stroke-width="3" stroke-linecap="round"/>
+  <path d="M23 54h18" stroke="#F2C66D" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="48" cy="47" r="4" stroke="#F2C66D" stroke-width="3"/>
+</svg>

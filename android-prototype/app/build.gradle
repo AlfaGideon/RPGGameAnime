@@ -2,6 +2,10 @@ plugins {
     id 'com.android.application'
 }
 
+def prototypeRunNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '0').toInteger()
+def prototypeVersionCode = 1000 + prototypeRunNumber
+def prototypeVersionName = prototypeRunNumber > 0 ? "0.2.${prototypeRunNumber}" : '0.2.0'
+
 android {
     namespace 'com.rpggameanime.prototype'
     compileSdk 35
@@ -10,8 +14,8 @@ android {
         applicationId 'com.rpggameanime.prototype'
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName '0.1.0'
+        versionCode prototypeVersionCode
+        versionName prototypeVersionName
     }
 
     compileOptions {
