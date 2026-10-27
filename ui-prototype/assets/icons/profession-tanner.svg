@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Кожевник">
+  <path d="M19 10c6 3 8 1 13 1s8 2 13-1l5 9-4 7 3 8-7 6-1 12H23l-1-12-7-6 3-8-4-7 5-9Z" stroke="#DF9E86" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M24 18h16M23 44h18" stroke="#FFE2D7" stroke-width="3" stroke-linecap="round"/>
+  <path d="M19 23v3m26-3v3m-22 8v3m18-3v3m-12 6v3m7-3v3" stroke="#F2C66D" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="32" cy="31" r="4" stroke="#F2C66D" stroke-width="3"/>
+</svg>

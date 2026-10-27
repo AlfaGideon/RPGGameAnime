@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Фермер">
+  <path d="M32 52V27" stroke="#BDE8A5" stroke-width="4" stroke-linecap="round"/>
+  <path d="M32 34C19 34 14 27 15 18c10-1 18 4 17 16Zm0-8c0-10 7-16 17-16 2 10-4 17-17 18" stroke="#9BD28A" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M19 53h26M24 59h16M14 46c5 3 10 3 15 0m6 0c5 3 10 3 15 0" stroke="#F2C66D" stroke-width="3" stroke-linecap="round"/>
+</svg>

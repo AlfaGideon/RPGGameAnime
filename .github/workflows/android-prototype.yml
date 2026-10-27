@@ -51,6 +51,7 @@ jobs:
 
       - name: Verify APK signature and bundled UI
         run: |
+          set -euo pipefail
           apk="android-prototype/app/build/outputs/apk/debug/app-debug.apk"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -q "^package: name='com.rpggameanime.prototype'"
@@ -58,8 +59,11 @@ jobs:
           unzip -l "$apk" | grep -q 'assets/styles.css'
           unzip -l "$apk" | grep -q 'assets/app.js'
           unzip -l "$apk" | grep -q 'assets/assets/echo-astra-logo.png'
-          for avatar in guardian duelist ranger arcanist warden; do
-            unzip -l "$apk" | grep -q "assets/assets/avatars/$avatar.svg"
+          for class_art in guardian duelist ranger arcanist warden; do
+            unzip -l "$apk" | grep -q "assets/assets/classes/$class_art.png"
+          done
+          for profession in blacksmith farmer herbalist miner carpenter tanner builder; do
+            unzip -l "$apk" | grep -q "assets/assets/icons/profession-$profession.svg"
           done
 
       - name: Publish APK artifact
@@ -70,17 +74,63 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Save APK on the Arena branch
+      - name: Save APK and build manifest on the Arena branch
         if: github.event_name == 'push' && github.ref == 'refs/heads/arena/f45db89b-rpggameanime'
+        env:
+          VERSION_NAME: 0.2.${{ github.run_number }}
         run: |
+          set -euo pipefail
+          apk="android-prototype/app/build/outputs/apk/debug/app-debug.apk"
           mkdir -p apk-output
-          cp android-prototype/app/build/outputs/apk/debug/app-debug.apk apk-output/Echo-Astra-UI-Prototype.apk
+          cp "$apk" apk-output/Echo-Astra-UI-Prototype.apk
+          version_code=$((1000 + GITHUB_RUN_NUMBER))
+          apk_sha256="$(sha256sum apk-output/Echo-Astra-UI-Prototype.apk | awk '{print $1}')"
+          tag_name="v${VERSION_NAME}"
+          apk_url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/apk-output/Echo-Astra-UI-Prototype.apk"
+          release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${tag_name}"
+          built_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          export VERSION_CODE="$version_code" APK_SHA256="$apk_sha256" TAG_NAME="$tag_name" APK_URL="$apk_url" RELEASE_URL="$release_url" BUILT_AT="$built_at"
+          python3 - <<'PY'
+          import json, os
+          manifest = {
+              "versionName": os.environ["VERSION_NAME"],
+              "versionCode": int(os.environ["VERSION_CODE"]),
+              "tagName": os.environ["TAG_NAME"],
+              "apkUrl": os.environ["APK_URL"],
+              "htmlUrl": os.environ["RELEASE_URL"],
+              "buildSha": os.environ["GITHUB_SHA"],
+              "sha256": os.environ["APK_SHA256"],
+              "builtAt": os.environ["BUILT_AT"],
+              "workflowRun": os.environ["GITHUB_RUN_ID"]
+          }
+          with open("apk-output/version.json", "w", encoding="utf-8") as file:
+              json.dump(manifest, file, indent=2)
+              file.write("\n")
+          PY
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add apk-output/Echo-Astra-UI-Prototype.apk
+          git add apk-output/Echo-Astra-UI-Prototype.apk apk-output/version.json
           if git diff --cached --quiet; then
-            echo "The checked-in APK is already up to date."
+            echo "The checked-in APK and build manifest are already up to date."
           else
-            git commit -m "Add installable Android UI prototype APK"
+            git commit -m "Publish Android prototype build ${VERSION_NAME}"
             git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Publish a versioned GitHub release for existing clients
+        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/f45db89b-rpggameanime'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_NAME: 0.2.${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          apk="apk-output/Echo-Astra-UI-Prototype.apk"
+          tag_name="v${VERSION_NAME}"
+          apk_sha256="$(sha256sum "$apk" | awk '{print $1}')"
+          version_code=$((1000 + GITHUB_RUN_NUMBER))
+          notes="$(printf 'Automated installable Android UI prototype build.\n\nSHA-256: %s\nVersion code: %s\nSource commit: %s' "$apk_sha256" "$version_code" "$GITHUB_SHA")"
+          if gh release view "$tag_name" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$tag_name" "$apk" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$tag_name" "$apk" --target "$GITHUB_SHA" --title "Эхо Астры ${VERSION_NAME}" --notes "$notes" --repo "$GITHUB_REPOSITORY"
           fi

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Строитель">
+  <path d="M10 51h44M15 51V32l9-8 9 8v19m0 0V19l9-8 9 8v32" stroke="#83B7E8" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M20 38h7m-7 7h7m12-19h7m-7 7h7m-7 7h7" stroke="#D7EDFF" stroke-width="3" stroke-linecap="round"/>
+  <path d="M10 57h44" stroke="#F2C66D" stroke-width="3" stroke-linecap="round"/>
+</svg>

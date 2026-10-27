@@ -32,21 +32,21 @@ const combatClasses = [
 ];
 
 const professions = [
-  { id: 'blacksmith', name: 'Кузнец', glyph: '⚒', role: 'Создание предметов', summary: 'Кует инструменты, детали и снаряжение.', work: 'Заказы кузницы', workText: 'Две заявки ждут материалы. Для следующей детали нужна руда.', action: 'Открыть мастерскую', accent: '#f2c66d' },
-  { id: 'farmer', name: 'Фермер', glyph: '🌾', role: 'Ферма и животноводство', summary: 'Выращивает пищу, шерсть и сырьё для ремесла.', work: 'Дела хозяйства', workText: 'Проверить урожай, собрать шерсть и подготовить заказ на шкуры.', action: 'Осмотреть ферму', accent: '#9bd28a' },
-  { id: 'herbalist', name: 'Травник', glyph: '✿', role: 'Травы и лечебные сборы', summary: 'Собирает растения и готовит природные компоненты.', work: 'Сбор трав', workText: 'У маяка появились незнакомые растения. Нужна проверка образцов.', action: 'Исследовать травы', accent: '#82d7c1' },
-  { id: 'miner', name: 'Рудокоп', glyph: '⛏', role: 'Руда и камень', summary: 'Находит материалы для кузниц и городских проектов.', work: 'Месторождение', workText: 'Кузнец Лиора оставил заказ на три куска железной руды.', action: 'Посмотреть заказ', accent: '#d2a873' },
-  { id: 'carpenter', name: 'Лесоруб / плотник', glyph: '🪵', role: 'Древесина и детали', summary: 'Заготавливает древесину и делает деревянные компоненты.', work: 'Заказ на балки', workText: 'Для новых доков нужны обработанные доски и крепления.', action: 'Открыть мастерскую', accent: '#c99a6b' },
-  { id: 'tanner', name: 'Кожевник', glyph: '◈', role: 'Обработка материалов', summary: 'Превращает шкуры в кожу и ремесленные заготовки.', work: 'Партия сырья', workText: 'Фермер передал шкуры. Выберите способ обработки заказа.', action: 'Обработать сырьё', accent: '#df9e86' },
-  { id: 'builder', name: 'Строитель', glyph: '⌂', role: 'Городские постройки', summary: 'Проектирует и организует мастерские и городские службы.', work: 'Проект поселения', workText: 'Не хватает досок и металлических деталей для городской кузницы.', action: 'Управлять проектом', accent: '#83b7e8' }
+  { id: 'blacksmith', name: 'Кузнец', role: 'Создание предметов', summary: 'Кует инструменты, детали и снаряжение.', work: 'Заказы кузницы', workText: 'Две заявки ждут материалы. Для следующей детали нужна руда.', action: 'Открыть мастерскую', accent: '#f2c66d' },
+  { id: 'farmer', name: 'Фермер', role: 'Ферма и животноводство', summary: 'Выращивает пищу, шерсть и сырьё для ремесла.', work: 'Дела хозяйства', workText: 'Проверить урожай, собрать шерсть и подготовить заказ на шкуры.', action: 'Осмотреть ферму', accent: '#9bd28a' },
+  { id: 'herbalist', name: 'Травник', role: 'Травы и лечебные сборы', summary: 'Собирает растения и готовит природные компоненты.', work: 'Сбор трав', workText: 'У маяка появились незнакомые растения. Нужна проверка образцов.', action: 'Исследовать травы', accent: '#82d7c1' },
+  { id: 'miner', name: 'Рудокоп', role: 'Руда и камень', summary: 'Находит материалы для кузниц и городских проектов.', work: 'Месторождение', workText: 'Кузнец Лиора оставил заказ на три куска железной руды.', action: 'Посмотреть заказ', accent: '#d2a873' },
+  { id: 'carpenter', name: 'Лесоруб / плотник', role: 'Древесина и детали', summary: 'Заготавливает древесину и делает деревянные компоненты.', work: 'Заказ на балки', workText: 'Для новых доков нужны обработанные доски и крепления.', action: 'Открыть мастерскую', accent: '#c99a6b' },
+  { id: 'tanner', name: 'Кожевник', role: 'Обработка материалов', summary: 'Превращает шкуры в кожу и ремесленные заготовки.', work: 'Партия сырья', workText: 'Фермер передал шкуры. Выберите способ обработки заказа.', action: 'Обработать сырьё', accent: '#df9e86' },
+  { id: 'builder', name: 'Строитель', role: 'Городские постройки', summary: 'Проектирует и организует мастерские и городские службы.', work: 'Проект поселения', workText: 'Не хватает досок и металлических деталей для городской кузницы.', action: 'Управлять проектом', accent: '#83b7e8' }
 ];
 
 const AVATAR_OPTIONS = [
-  { id: 'guardian', name: 'Хранитель Лиора', role: 'Страж · портрет игры', src: 'assets/avatars/guardian.svg', accent: '#65d6d0' },
-  { id: 'duelist', name: 'Клинок рассвета', role: 'Дуэлянт · портрет игры', src: 'assets/avatars/duelist.svg', accent: '#f2a66d' },
-  { id: 'ranger', name: 'Следопыт Эйры', role: 'Разведчик · портрет игры', src: 'assets/avatars/ranger.svg', accent: '#86d59a' },
-  { id: 'arcanist', name: 'Астральный маг', role: 'Арканист · портрет игры', src: 'assets/avatars/arcanist.svg', accent: '#b69af1' },
-  { id: 'warden', name: 'Светлый хранитель', role: 'Целитель · портрет игры', src: 'assets/avatars/warden.svg', accent: '#74c9e9' }
+  { id: 'guardian', name: 'Страж Лиора', role: 'Страж · встроенный портрет', src: 'assets/classes/guardian.png', accent: '#65d6d0' },
+  { id: 'duelist', name: 'Клинок рассвета', role: 'Дуэлянт · встроенный портрет', src: 'assets/classes/duelist.png', accent: '#f2a66d' },
+  { id: 'ranger', name: 'Следопыт Эйры', role: 'Следопыт · встроенный портрет', src: 'assets/classes/ranger.png', accent: '#86d59a' },
+  { id: 'arcanist', name: 'Астральный маг', role: 'Арканист · встроенный портрет', src: 'assets/classes/arcanist.png', accent: '#b69af1' },
+  { id: 'warden', name: 'Светлый хранитель', role: 'Хранитель · встроенный портрет', src: 'assets/classes/warden.png', accent: '#74c9e9' }
 ];
 
 function readSavedAvatarId() {
@@ -61,7 +61,14 @@ function saveAvatarId(avatarId) {
   catch (error) { /* Private browsing and file:// storage may be unavailable. */ }
 }
 
-const MAP_CONFIG = { width: 100, height: 100, viewRadius: 4, stepSeconds: 6, borderStepSeconds: 9, gameMinutesPerStep: 4 };
+const MAP_CONFIG = { width: 100, height: 100, viewRadius: 4 };
+const MOVEMENT_RULES = {
+  classGameMinutes: { guardian: 8, duelist: 6, ranger: 4, arcanist: 6, warden: 7 },
+  professionMinuteModifier: { blacksmith: 1, farmer: 0, herbalist: -1, miner: 2, carpenter: 1, tanner: 1, builder: 0 },
+  biomeTransitionMinutes: 3,
+  minimumGameMinutes: 3,
+  demoMillisecondsPerGameMinute: 1000
+};
 const BIOME_INFO = {
   coast: { name: 'Туманное побережье', short: 'Побережье', glyph: '≈' },
   forest: { name: 'Шепчущий лес', short: 'Лес', glyph: '♧' },
@@ -96,7 +103,60 @@ const pointsOfInterest = [
 ];
 
 const UPDATE_REPOSITORY = 'AlfaGideon/RPGGameAnime';
-const CURRENT_APP_VERSION = '0.1.0';
+const UPDATE_BRANCH = 'arena/f45db89b-rpggameanime';
+const BUILD_MANIFEST_API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/contents/apk-output/version.json?ref=${encodeURIComponent(UPDATE_BRANCH)}`;
+const RELEASES_API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/releases/latest`;
+const RELEASES_PAGE = `https://github.com/${UPDATE_REPOSITORY}/releases`;
+const RAW_APK_URL = `https://raw.githubusercontent.com/${UPDATE_REPOSITORY}/${UPDATE_BRANCH}/apk-output/Echo-Astra-UI-Prototype.apk`;
+
+function readInstalledBuild() {
+  const fallback = { versionName: '0.1.0', versionCode: 0 };
+  try {
+    const bridge = window.EchoAstraAndroid;
+    if (!bridge || typeof bridge.getInstalledVersionName !== 'function') return fallback;
+    const versionName = String(bridge.getInstalledVersionName() || fallback.versionName);
+    const versionCode = typeof bridge.getInstalledVersionCode === 'function'
+      ? Number(bridge.getInstalledVersionCode()) || 0
+      : 0;
+    return { versionName, versionCode };
+  } catch (error) { return fallback; }
+}
+
+const installedBuild = readInstalledBuild();
+const CURRENT_APP_VERSION = installedBuild.versionName;
+const CURRENT_APP_VERSION_CODE = installedBuild.versionCode;
+
+function readWorldProgress() {
+  const fallback = { position: { x: 10, y: 50 }, travel: null };
+  const validCell = point => point && Number.isInteger(Number(point.x)) && Number.isInteger(Number(point.y))
+    && Number(point.x) >= 1 && Number(point.x) <= MAP_CONFIG.width
+    && Number(point.y) >= 1 && Number(point.y) <= MAP_CONFIG.height;
+  const biomeAt = point => biomeSectors[Math.floor((Number(point.y) - 1) / 10)][Math.floor((Number(point.x) - 1) / 10)];
+  try {
+    const saved = JSON.parse(window.localStorage.getItem('echo-astra.world-progress') || 'null');
+    if (!saved || !validCell(saved.position)) return fallback;
+    const position = { x: Number(saved.position.x), y: Number(saved.position.y) };
+    const savedTravel = saved.travel;
+    if (!savedTravel || !validCell(savedTravel.from) || !validCell(savedTravel.to)) return { position, travel: null };
+    const startedAt = Number(savedTravel.startedAt);
+    const endsAt = Number(savedTravel.endsAt);
+    const durationMs = Number(savedTravel.durationMs);
+    if (!Number.isFinite(startedAt) || !Number.isFinite(endsAt) || !Number.isFinite(durationMs) || durationMs <= 0) return { position, travel: null };
+    const to = { x: Number(savedTravel.to.x), y: Number(savedTravel.to.y) };
+    if (endsAt <= Date.now()) return { position: to, travel: null };
+    const from = { x: Number(savedTravel.from.x), y: Number(savedTravel.from.y) };
+    const fromBiome = biomeAt(from);
+    const toBiome = biomeAt(to);
+    return {
+      position: from,
+      travel: {
+        from, to, fromBiome, toBiome, biomeTransition: fromBiome !== toBiome,
+        durationMs, startedAt, endsAt,
+        gameMinutes: Number(savedTravel.gameMinutes) || Math.ceil(durationMs / MOVEMENT_RULES.demoMillisecondsPerGameMinute)
+      }
+    };
+  } catch (error) { return fallback; }
+}
 
 function readAutoUpdatePreference() {
   try { return window.localStorage.getItem('echo-astra.auto-update') === 'true'; }
@@ -117,6 +177,8 @@ const navItems = [
   { id: 'social', label: 'Связь', icon: '✉' }
 ];
 
+const initialWorldProgress = readWorldProgress();
+
 const state = {
   screen: 'welcome',
   classId: 'guardian',
@@ -127,8 +189,8 @@ const state = {
   marketTab: 'Фиксированная цена',
   characterTab: 'Обзор',
   cityMode: 'lior',
-  position: { x: 10, y: 50 },
-  travel: null,
+  position: initialWorldProgress.position,
+  travel: initialWorldProgress.travel,
   autoUpdateEnabled: readAutoUpdatePreference(),
   updateStatus: 'idle',
   updateCheckInProgress: false,
@@ -159,6 +221,41 @@ const currentAvatar = () => AVATAR_OPTIONS.find(avatar => avatar.id === state.av
 function avatarImageMarkup(avatar = currentAvatar()) {
   return `<img class="avatar-image" src="${avatar.src}" alt="${esc(avatar.name)}">`;
 }
+function professionIconMarkup(professionId, className = 'profession-icon') {
+  const profession = professions.find(item => item.id === professionId) || professions[0];
+  return `<img class="${className}" src="assets/icons/profession-${profession.id}.svg" alt="" aria-hidden="true">`;
+}
+function classArtMarkup(combatClass = cls()) {
+  return `<img class="class-profession-art-image" src="assets/classes/${combatClass.id}.png" alt="${esc(combatClass.name)} — иллюстрация боевого класса">`;
+}
+function getMovementGameMinutes({ biomeTransition = false, classId = state.classId, professionId = state.professionId } = {}) {
+  const classMinutes = MOVEMENT_RULES.classGameMinutes[classId] || MOVEMENT_RULES.classGameMinutes.guardian;
+  const professionModifier = MOVEMENT_RULES.professionMinuteModifier[professionId] || 0;
+  return Math.max(MOVEMENT_RULES.minimumGameMinutes, classMinutes + professionModifier + (biomeTransition ? MOVEMENT_RULES.biomeTransitionMinutes : 0));
+}
+function getMovementDurationMs(biomeTransition = false) {
+  return getMovementGameMinutes({ biomeTransition }) * MOVEMENT_RULES.demoMillisecondsPerGameMinute;
+}
+const moscowClockFormatter = (() => {
+  try {
+    return new Intl.DateTimeFormat('ru-RU', { timeZone: 'Europe/Moscow', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  } catch (error) { return null; }
+})();
+function formatMoscowClock(timestamp = Date.now()) {
+  if (moscowClockFormatter) return moscowClockFormatter.format(new Date(timestamp));
+  return new Date(timestamp + 3 * 60 * 60 * 1000).toISOString().slice(11, 19);
+}
+function formatMoscowTime(timestamp = Date.now()) {
+  return `${formatMoscowClock(timestamp)} МСК`;
+}
+function saveWorldProgress() {
+  try { window.localStorage.setItem('echo-astra.world-progress', JSON.stringify({ position: state.position, travel: state.travel })); }
+  catch (error) { /* Private browsing and file:// storage may be unavailable. */ }
+}
+function updateMoscowClocks() {
+  const clock = formatMoscowClock();
+  document.querySelectorAll('[data-moscow-clock]').forEach(element => { element.textContent = clock; });
+}
 function avatarButtonMarkup(className = 'player-portrait', showEdit = true) {
   return `<button type="button" class="${className} avatar-picker-trigger" data-action="open-avatar-picker" title="Сменить аватар" aria-label="Сменить аватар игрока">${avatarImageMarkup()}${showEdit ? '<span class="avatar-edit-indicator" aria-hidden="true">✎</span>' : ''}</button>`;
 }
@@ -184,7 +281,9 @@ function getTravelRemainingMs() {
 
 function formatCountdown(milliseconds) {
   const totalSeconds = Math.ceil(milliseconds / 1000);
-  return `00:${String(totalSeconds).padStart(2, '0')}`;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function renderShell() {
@@ -233,9 +332,9 @@ function renderMap() {
     <div class="card travel-panel">
       <div class="travel-panel-heading"><div><span class="eyebrow">перемещение</span><strong>Путь к клетке ${formatCell(state.travel.to.x, state.travel.to.y)}</strong></div><strong class="travel-countdown" data-travel-countdown>${formatCountdown(getTravelRemainingMs())}</strong></div>
       <div class="travel-progress"><span data-travel-progress style="width:${progress}%"></span></div>
-      <p>${state.travel.biomeTransition ? 'Переход между биомами · ' : ''}${state.travel.gameMinutes} игровых мин. · в демо ожидание ${Math.ceil(state.travel.durationMs / 1000)} сек.</p>
+      <p>${state.travel.biomeTransition ? 'Переход между биомами · ' : ''}${state.travel.gameMinutes} игровых мин. · прибытие ${formatMoscowTime(state.travel.endsAt)} · демо: 1 игровая минута = 1 секунда.</p>
     </div>` : `
-    <div class="map-travel-note"><span class="travel-note-icon">⌛</span><span>Один шаг занимает около <strong>${MAP_CONFIG.gameMinutesPerStep} игровых минут</strong>. В демо переход длится 6 секунд, граница биома — 9 секунд.</span></div>`;
+    <div class="map-travel-note"><span class="travel-note-icon">⌛</span><span>Скорость <strong>${cls().name} + ${prof().name}: ${getMovementGameMinutes()} игровых мин.</strong> за клетку. Граница биома: +${MOVEMENT_RULES.biomeTransitionMinutes} мин. · демо: 1 минута = 1 секунда.</span></div>`;
 
   const tiles = [];
   for (let rowY = y - radius; rowY <= y + radius; rowY += 1) {
@@ -282,7 +381,7 @@ function renderMap() {
     <div class="page-title-row map-page-title"><div><div class="eyebrow">путешествия по Эйре · 100 × 100 клеток</div><h1>Карта мира</h1><p>Открой соседнюю клетку, чтобы сделать следующий шаг.</p></div><span class="badge badge-teal">${currentBiome.glyph} ${currentBiome.short}</span></div>
     <section class="card map-location-card">
       <div class="map-location-pin">⌖</div><div class="map-location-copy"><span class="eyebrow">текущее местоположение</span><strong>${locationName}</strong><span>${currentBiome.name} · клетка ${formatCell(x, y)}</span></div>
-      <span class="map-coordinate">X ${String(x).padStart(2, '0')}<br>Y ${String(y).padStart(2, '0')}</span>
+      <span class="map-coordinate">X ${String(x).padStart(2, '0')}<br>Y ${String(y).padStart(2, '0')}<small class="map-clock-row">МСК <b data-moscow-clock>${formatMoscowClock()}</b></small></span>
     </section>
     ${travelPanel}
     <section class="card map-view-card">
@@ -319,7 +418,7 @@ function renderWelcome() {
           <button class="btn btn-primary btn-block" data-action="start-create">Создать персонажа <span aria-hidden="true">→</span></button>
           <button class="btn btn-secondary btn-block" data-action="quick-demo">Посмотреть демо-героя</button>
         </div>
-        <p class="demo-note">Это только макет экранов: кнопки меняют демонстрационные страницы, прогресс не сохраняется.</p>
+        <p class="demo-note">Это только макет экранов: игровые данные не синхронизируются с сервером; позиция и незавершённый маршрут карты сохраняются на устройстве.</p>
       </div>
     </section>`;
 }
@@ -332,10 +431,11 @@ function renderClassChoice() {
   screenEl.innerHTML = `
     <div class="page-title-row"><div><div class="eyebrow">создание персонажа · шаг 1 из 3</div><h1>Выбери боевой класс</h1><p>Профессию выберешь после общего вступительного задания.</p></div></div>
     <div class="form-row"><label for="hero-name">Имя персонажа</label><input id="hero-name" class="input" maxlength="18" placeholder="Например, Астра" value="${esc(state.characterName === 'Астра' ? '' : state.characterName)}"></div>
-    <div class="class-grid">${combatClasses.map(c => `
-      <button class="choice-card ${state.classId === c.id ? 'selected' : ''}" data-pick-class="${c.id}" style="--class-accent:${c.accent}">
-        <div class="choice-icon">${c.glyph}</div><strong>${c.name}</strong><small>${c.role}</small>
-        ${ratingDots(c.damage)}<small class="tiny">Урон ${c.damage} · стойкость ${c.durability} · поддержка ${c.support}</small>
+    <div class="class-grid class-art-grid">${combatClasses.map(c => `
+      <button class="choice-card class-art-choice-card ${state.classId === c.id ? 'selected' : ''}" data-pick-class="${c.id}" style="--class-accent:${c.accent}">
+        <span class="class-choice-image"><img src="assets/classes/${c.id}.png" alt="" aria-hidden="true"></span>
+        <div class="class-choice-details"><span class="choice-icon" style="color:${c.accent}">${c.glyph}</span><strong>${c.name}</strong><small>${c.role}</small>
+        <div class="class-rating-row">${ratingDots(c.damage)}</div><small class="tiny">Урон ${c.damage} · стойкость ${c.durability} · поддержка ${c.support}</small></div>
       </button>`).join('')}</div>
     <div class="choice-footer"><button class="btn btn-primary btn-block" data-action="to-intro">Подтвердить и продолжить</button><button class="btn btn-secondary btn-block" data-action="go-welcome">Назад</button></div>`;
 }
@@ -361,7 +461,7 @@ function renderProfessionChoice() {
     <div class="notice teal-notice" style="margin-bottom:13px">Твой боевой класс: <strong>${cls().glyph} ${cls().name}</strong>. Теперь выбери одну активную профессию.</div>
     <div class="class-grid">${professions.map(p => `
       <button class="choice-card ${state.professionId === p.id ? 'selected' : ''}" data-pick-profession="${p.id}">
-        <div class="choice-icon" style="color:${p.accent};background:rgba(242,198,109,.08)">${p.glyph}</div><strong>${p.name}</strong><small>${p.summary}</small>
+        <div class="choice-icon" style="--choice-accent:${p.accent};color:${p.accent};background:rgba(242,198,109,.08)">${professionIconMarkup(p.id)}</div><strong>${p.name}</strong><small>${p.summary}</small>
       </button>`).join('')}</div>
     <div class="choice-footer"><button class="btn btn-primary btn-block" data-action="finish-creation">Войти в Лиор</button><button class="btn btn-secondary btn-block" data-action="go-intro">Назад</button></div>`;
 }
@@ -392,8 +492,8 @@ function renderHome() {
         <div class="path-icon" style="color:${c.accent}">${c.glyph}</div><span class="badge badge-teal">БОЕВОЙ КЛАСС</span>
         <h3 style="margin-top:9px">${c.path}</h3><p>${c.pathText}</p><button class="text-action" data-action="open-combat-path">${c.pathAction} →</button>
       </article>
-      <article class="card path-card profession" data-glyph="${p.glyph}">
-        <div class="path-icon" style="color:${p.accent}">${p.glyph}</div><span class="badge badge-gold">ПРОФЕССИЯ</span>
+      <article class="card path-card profession" data-glyph="">
+        <div class="path-icon" style="--choice-accent:${p.accent};color:${p.accent}">${professionIconMarkup(p.id)}</div><span class="badge badge-gold">ПРОФЕССИЯ</span>
         <h3 style="margin-top:9px">${p.work}</h3><p>${p.workText}</p><button class="text-action" data-action="open-profession">${p.action} →</button>
       </article>
     </div>
@@ -410,7 +510,7 @@ function getQuestRows() {
   return [
     { group: 'Основной сюжет', glyph: '✦', title: 'Город над облаками', desc: 'Помоги Иаре восстановить сигнальный узел.', status: '1/3', reward: '40 м' },
     { group: 'Боевой класс', glyph: cls().glyph, title: cls().path, desc: cls().pathText, status: '0/4', reward: 'Опыт' },
-    { group: 'Профессия', glyph: prof().glyph, title: prof().work, desc: prof().workText, status: 'Заказ', reward: 'Материалы' },
+    { group: 'Профессия', glyph: professionIconMarkup(prof().id), title: prof().work, desc: prof().workText, status: 'Заказ', reward: 'Материалы' },
     { group: 'Побочные', glyph: '☼', title: 'Пропавшая экспедиция', desc: 'Мейра ищет записи о грузе, не дошедшем до порта.', status: 'Новое', reward: '25 м' },
     { group: 'Ежедневные', glyph: '◷', title: 'Поручения мастерской', desc: 'Помоги одной из служб Лиора выполнить небольшой заказ.', status: 'Ежедневно', reward: '20 м' },
     { group: 'Еженедельные', glyph: '⚑', title: 'Сигнал из шторма', desc: 'Собери группу и проверь нестабильный маяк.', status: 'Еженедельно', reward: '100 м' }
@@ -442,14 +542,18 @@ function renderCharacter() {
     <div class="card card-pad"><div class="player-identity">${avatarButtonMarkup('player-portrait', true)}<div><div class="player-name">${esc(state.characterName || 'Астра')}</div><div class="player-subtitle">Уровень 1 · Откликнувшийся</div></div><span class="badge badge-gold">100 м</span></div>
       <div class="stat-grid"><div class="card-flat stat-box"><strong>${c.damage}</strong><span>Урон</span></div><div class="card-flat stat-box"><strong>${c.durability}</strong><span>Стойкость</span></div><div class="card-flat stat-box"><strong>${c.support}</strong><span>Поддержка</span></div></div>
       <div class="list-card card-flat"><div class="list-icon">${c.glyph}</div><div class="list-copy"><strong>${c.name}</strong><span>${c.role}</span></div><span class="badge badge-teal">Боевой путь</span></div>
-      <div class="list-card card-flat" style="margin-top:8px"><div class="list-icon">${p.glyph}</div><div class="list-copy"><strong>${p.name}</strong><span>${p.role}</span></div><span class="badge badge-gold">Профессия</span></div>
+      <div class="list-card card-flat" style="margin-top:8px"><div class="list-icon profession-list-icon">${professionIconMarkup(p.id)}</div><div class="list-copy"><strong>${p.name}</strong><span>${p.role}</span></div><span class="badge badge-gold">Профессия</span></div>
     </div>
     <div class="section-head"><h2>Сюжетные линии</h2></div>
-    <div class="list-stack"><div class="card list-card"><div class="list-icon">✦</div><div class="list-copy"><strong>Общий сюжет</strong><span>Город над облаками · этап 1 из 3</span></div><span class="badge">Общий</span></div><div class="card list-card"><div class="list-icon">${c.glyph}</div><div class="list-copy"><strong>${c.path}</strong><span>Персональная линия боевого класса</span></div><span class="badge badge-teal">0/4</span></div><div class="card list-card"><div class="list-icon">${p.glyph}</div><div class="list-copy"><strong>${p.name}: начало пути</strong><span>Профессия и городские поручения</span></div><span class="badge badge-gold">0/5</span></div></div>` : state.characterTab === 'Инвентарь' ? `
+    <div class="list-stack"><div class="card list-card"><div class="list-icon">✦</div><div class="list-copy"><strong>Общий сюжет</strong><span>Город над облаками · этап 1 из 3</span></div><span class="badge">Общий</span></div><div class="card list-card"><div class="list-icon">${c.glyph}</div><div class="list-copy"><strong>${c.path}</strong><span>Персональная линия боевого класса</span></div><span class="badge badge-teal">0/4</span></div><div class="card list-card"><div class="list-icon profession-list-icon">${professionIconMarkup(p.id)}</div><div class="list-copy"><strong>${p.name}: начало пути</strong><span>Профессия и городские поручения</span></div><span class="badge badge-gold">0/5</span></div></div>` : state.characterTab === 'Инвентарь' ? `
     <div class="card card-pad"><div class="section-head" style="margin-top:0"><h2>Снаряжение</h2><span class="badge">4 предмета</span></div>${[['⚔','Короткий меч','Обычный · металлический'],['🛡','Дорожный щит','Обычный · защитный'],['⛏','Простая кирка','Инструмент'],['✧','Осколок маяка','Сюжетный предмет']].map(x=>`<div class="list-card card-flat" style="margin-top:8px"><div class="list-icon">${x[0]}</div><div class="list-copy"><strong>${x[1]}</strong><span>${x[2]}</span></div><button class="text-action" data-action="item-details">Открыть</button></div>`).join('')}</div>` : `
     <div class="card card-pad"><div class="section-head" style="margin-top:0"><h2>Способности</h2><span class="badge badge-teal">${c.name}</span></div>${[c.skill,'Защитная стойка','Сигнал Отклика'].map((x,i)=>`<div class="list-card card-flat" style="margin-top:8px"><div class="list-icon">${i===0?c.glyph:'✧'}</div><div class="list-copy"><strong>${x}</strong><span>${i===0?c.role:'Откроется по мере развития.'}</span></div><span class="badge">${i===0?'Доступно':'Закрыто'}</span></div>`).join('')}</div>`;
   screenEl.innerHTML = `
     <div class="page-title-row"><div><div class="eyebrow">герой и развитие</div><h1>Персонаж</h1><p>Боевой путь и профессия развиваются отдельно.</p></div>${avatarButtonMarkup('player-portrait', true)}</div>
+    <section class="class-profession-art" aria-label="Иллюстрация боевого класса и значок профессии">
+      ${classArtMarkup(c)}<div class="class-profession-art-shade"></div>
+      <div class="class-profession-art-copy"><span class="eyebrow">боевой класс</span><strong>${c.name}</strong><span class="profession-art-badge">${professionIconMarkup(p.id)}<span>${p.name}</span></span></div>
+    </section>
     <div class="notice teal-notice">В тестовом режиме класс и профессию можно бесплатно сменить в настройках. В полноценной игре для этого появятся отдельные правила.</div>
     <div class="segmented">${['Обзор','Инвентарь','Способности'].map(t=>`<button class="${state.characterTab===t?'active':''}" data-character-tab="${t}">${t}</button>`).join('')}</div>
     ${content}
@@ -461,10 +565,10 @@ function renderCharacter() {
 }
 
 function getUpdateStatusText() {
-  if (state.updateCheckInProgress || state.updateStatus === 'checking') return 'Проверяем GitHub Releases…';
-  if (state.updateStatus === 'no-release') return 'Опубликованных APK-релизов пока нет.';
-  if (state.updateStatus === 'current') return `Установлена актуальная версия ${CURRENT_APP_VERSION}.`;
-  if (state.updateStatus === 'update') return `Найдена новая версия ${(state.latestRelease && state.latestRelease.tag_name) || ''}.`;
+  if (state.updateCheckInProgress || state.updateStatus === 'checking') return 'Ищем сборку APK в манифесте и GitHub Releases…';
+  if (state.updateStatus === 'no-release') return 'Манифест сборки и опубликованный APK-релиз не найдены.';
+  if (state.updateStatus === 'current') return `Установлена актуальная сборка ${state.latestRelease ? state.latestRelease.version_name : CURRENT_APP_VERSION}.`;
+  if (state.updateStatus === 'update') return `Найдена новая сборка ${state.latestRelease ? state.latestRelease.version_name : ''}.`;
   if (state.updateStatus === 'error') return 'GitHub сейчас недоступен. Проверь подключение и попробуй ещё раз.';
   return 'Проверка версии ещё не выполнялась.';
 }
@@ -477,13 +581,13 @@ function renderSettings() {
   screenEl.innerHTML = `
     <div class="page-title-row"><div><div class="eyebrow">персональные параметры</div><h1>Настройки</h1><p>Обновления и тестовые настройки героя.</p></div><span class="badge badge-teal">ТЕСТ</span></div>
     <section class="card settings-section update-settings-card">
-      <div class="settings-heading"><div class="settings-icon update-icon">↻</div><div class="settings-heading-copy"><span class="eyebrow">версия приложения</span><h2>Обновления GitHub</h2><p>Проверка новых APK-релизов проекта.</p></div></div>
+      <div class="settings-heading"><div class="settings-icon update-icon">↻</div><div class="settings-heading-copy"><span class="eyebrow">версия приложения</span><h2>Обновления GitHub</h2><p>Проверка манифеста сборки и опубликованных APK-релизов.</p></div></div>
       <div class="settings-toggle-row"><div><strong>Автоматически проверять</strong><small>При запуске и по кнопке ниже</small></div><button type="button" class="settings-toggle ${state.autoUpdateEnabled ? 'enabled' : ''}" role="switch" aria-checked="${state.autoUpdateEnabled}" aria-label="Автопроверка обновлений GitHub" data-action="toggle-auto-update"><span></span></button></div>
       <div class="update-status ${statusClass}" aria-live="polite"><span class="status-pulse ${state.updateCheckInProgress ? 'checking' : ''}"></span><span>${getUpdateStatusText()}</span></div>
-      <div class="update-version-row"><span>Установлено</span><strong>v${CURRENT_APP_VERSION}</strong></div>
+      <div class="update-version-row"><span>Установлено</span><strong>v${CURRENT_APP_VERSION}${CURRENT_APP_VERSION_CODE ? ` · код ${CURRENT_APP_VERSION_CODE}` : ''}</strong></div>
       <button class="btn btn-primary btn-block" data-action="check-github" ${state.updateCheckInProgress ? 'disabled' : ''}>${state.updateCheckInProgress ? 'Проверяем…' : 'Проверить GitHub сейчас'}</button>
-      ${state.latestRelease && state.latestRelease.html_url && state.updateStatus === 'update' ? `<button class="btn btn-secondary btn-block release-link-button" data-action="open-latest-release">Открыть релиз ${esc(state.latestRelease.tag_name)} →</button>` : ''}
-      <p class="settings-footnote">Источник: <code>${UPDATE_REPOSITORY}/releases/latest</code>. Android попросит подтвердить установку APK. Для выпуска обновлений нужна стабильная подпись приложения.</p>
+      ${state.latestRelease && state.updateStatus === 'update' ? `<button class="btn btn-secondary btn-block release-link-button" data-action="open-latest-release">${state.latestRelease.apk_url ? `Скачать APK ${esc(state.latestRelease.version_name)} →` : `Открыть страницу релиза ${esc(state.latestRelease.tag_name)} →`}</button>` : ''}
+      <p class="settings-footnote">Источник: <code>apk-output/version.json</code> и резервно <code>${UPDATE_REPOSITORY}/releases/latest</code>. Android попросит подтвердить установку. Для обновления поверх старой версии нужна одинаковая подпись APK.</p>
     </section>
     <div class="section-head"><h2>Аватар игрока</h2><span class="badge">Галерея игры</span></div>
     <section class="card settings-choice-card avatar-settings-card">
@@ -498,7 +602,7 @@ function renderSettings() {
     </section>
     <div class="section-head"><h2>Профессия</h2><span class="badge badge-gold">Бесплатно в тесте</span></div>
     <section class="card settings-choice-card">
-      <div class="settings-choice-icon" style="--choice-accent:${p.accent}">${p.glyph}</div><div class="settings-choice-copy"><span class="eyebrow">текущее ремесло</span><strong>${p.name}</strong><small>${p.role}</small></div>
+      <div class="settings-choice-icon" style="--choice-accent:${p.accent}">${professionIconMarkup(p.id)}</div><div class="settings-choice-copy"><span class="eyebrow">текущее ремесло</span><strong>${p.name}</strong><small>${p.role}</small></div>
       <button class="btn btn-secondary btn-small" data-action="open-profession-selector">Сменить</button>
     </section>
     <div class="notice settings-note">В тестовом режиме смена класса и профессии бесплатна. После перехода к полноценной игре правила и возможная стоимость будут показаны до подтверждения.</div>`;
@@ -515,7 +619,7 @@ function renderChoiceModal() {
     <p>Карточки показывают роль и особенности. Смена сейчас бесплатна.</p>
     <div class="selection-card-list ${isClass ? 'class-selection-list' : ''}">
       ${choices.map(choice => `<button type="button" class="selection-card ${selectedId === choice.id ? 'selected' : ''}" style="--choice-accent:${choice.accent}" data-select-option="${choice.id}" aria-pressed="${selectedId === choice.id}">
-        <span class="selection-glyph">${choice.glyph}</span><span class="selection-copy"><strong>${choice.name}</strong><small>${choice.role}</small><span>${isClass ? choice.short : choice.summary}</span>${isClass ? `<em>Урон ${choice.damage} · стойкость ${choice.durability} · поддержка ${choice.support}</em>` : ''}</span>
+        <span class="selection-glyph">${isClass ? choice.glyph : professionIconMarkup(choice.id)}</span><span class="selection-copy"><strong>${choice.name}</strong><small>${choice.role}</small><span>${isClass ? choice.short : choice.summary}</span>${isClass ? `<em>Урон ${choice.damage} · стойкость ${choice.durability} · поддержка ${choice.support}</em>` : ''}</span>
         <span class="selection-check">${selectedId === choice.id ? '✓' : ''}</span>
       </button>`).join('')}
     </div>
@@ -579,25 +683,41 @@ function isVersionNewer(candidate, current) {
   return false;
 }
 
+function isRemoteBuildNewer(build) {
+  const remoteCode = Number(build.version_code || 0);
+  if (remoteCode > 0 && CURRENT_APP_VERSION_CODE > 0) return remoteCode > CURRENT_APP_VERSION_CODE;
+  return isVersionNewer(build.version_name || build.tag_name, CURRENT_APP_VERSION);
+}
+
 function finishGithubUpdateCheck(result) {
   state.updateCheckInProgress = false;
   if (result.status === 'no-release') {
     state.latestRelease = null;
     state.updateStatus = 'no-release';
-    addNotification('Релизов APK пока нет', 'GitHub доступен, но в репозитории ещё не опубликован релиз для автообновления.', '↻', 'Обновление', 'github-no-release');
+    addNotification('Сборка APK не найдена', 'GitHub не вернул ни манифест сборки, ни опубликованный APK-релиз.', '↻', 'Обновление', 'github-no-release');
   } else if (result.status !== 'ok') {
     state.latestRelease = null;
     state.updateStatus = 'error';
     addNotification('Не удалось проверить GitHub', 'Проверь подключение к интернету и попробуй ещё раз.', '⚠', 'Обновление', 'github-check-error');
   } else {
-    const release = { tag_name: result.tag_name || '', html_url: result.html_url || `https://github.com/${UPDATE_REPOSITORY}/releases` };
+    const versionName = String(result.version_name || result.versionName || result.tag_name || CURRENT_APP_VERSION);
+    const tagName = String(result.tag_name || `v${versionName.replace(/^v/i, '')}`);
+    const release = {
+      tag_name: tagName,
+      version_name: versionName,
+      version_code: Number(result.version_code || result.versionCode || 0),
+      html_url: result.html_url || result.page_url || RELEASES_PAGE,
+      apk_url: result.apk_url || result.apkUrl || result.browser_download_url || '',
+      build_sha: result.build_sha || result.buildSha || '',
+      sha256: result.sha256 || ''
+    };
     state.latestRelease = release;
-    if (isVersionNewer(release.tag_name, CURRENT_APP_VERSION)) {
+    if (isRemoteBuildNewer(release)) {
       state.updateStatus = 'update';
-      addNotification(`Доступно обновление ${release.tag_name}`, 'Открой релиз GitHub и установи APK после подтверждения Android.', '↻', 'Обновление', `release-${release.tag_name}`);
+      addNotification(`Доступно обновление ${release.version_name}`, 'Новая APK-сборка найдена. Нажми «Скачать APK», чтобы открыть прямую загрузку.', '↻', 'Обновление', `build-${release.version_code || release.version_name}`);
     } else {
       state.updateStatus = 'current';
-      addNotification('Приложение обновлено', `Сейчас установлена последняя версия ${release.tag_name || CURRENT_APP_VERSION}.`, '✓', 'Обновление', `current-${release.tag_name || CURRENT_APP_VERSION}`);
+      addNotification('Приложение обновлено', `Установлена актуальная сборка ${release.version_name}.`, '✓', 'Обновление', `current-${release.version_code || release.version_name}`);
     }
   }
   if (state.screen === 'settings') renderSettings();
@@ -622,16 +742,33 @@ async function checkGithubUpdates() {
 
   try {
     if (typeof fetch !== 'function' || (typeof navigator !== 'undefined' && navigator.onLine === false)) throw new Error('offline');
-    const response = await fetch(`https://api.github.com/repos/${UPDATE_REPOSITORY}/releases/latest`, {
-      headers: { Accept: 'application/vnd.github+json' }, cache: 'no-store'
-    });
-    if (response.status === 404) {
-      finishGithubUpdateCheck({ status: 'no-release' });
+    const headers = { Accept: 'application/vnd.github+json' };
+    const options = { headers, cache: 'no-store' };
+    const manifestResponse = await fetch(BUILD_MANIFEST_API, options);
+    if (manifestResponse.status === 404) {
+      const releaseResponse = await fetch(RELEASES_API, options);
+      if (releaseResponse.status === 404) {
+        finishGithubUpdateCheck({ status: 'no-release' });
+        return;
+      }
+      if (!releaseResponse.ok) throw new Error(`GitHub HTTP ${releaseResponse.status}`);
+      const release = await releaseResponse.json();
+      const apk = (release.assets || []).find(asset => /\.apk$/i.test(asset.name || ''));
+      finishGithubUpdateCheck({
+        status: 'ok', tag_name: release.tag_name, html_url: release.html_url,
+        apk_url: apk ? apk.browser_download_url : '', version_name: String(release.tag_name || '').replace(/^v/i, '')
+      });
       return;
     }
-    if (!response.ok) throw new Error(`GitHub HTTP ${response.status}`);
-    const release = await response.json();
-    finishGithubUpdateCheck({ status: 'ok', tag_name: release.tag_name, html_url: release.html_url });
+    if (!manifestResponse.ok) throw new Error(`GitHub HTTP ${manifestResponse.status}`);
+    const file = await manifestResponse.json();
+    if (!file.content) throw new Error('Build manifest is empty');
+    const manifest = JSON.parse(atob(String(file.content).replace(/\s/g, '')));
+    finishGithubUpdateCheck({
+      status: 'ok', version_name: manifest.versionName, version_code: manifest.versionCode,
+      tag_name: manifest.tagName, apk_url: manifest.apkUrl || RAW_APK_URL,
+      html_url: manifest.htmlUrl || RELEASES_PAGE, build_sha: manifest.buildSha, sha256: manifest.sha256
+    });
   } catch (error) {
     finishGithubUpdateCheck({ status: 'error' });
   }
@@ -669,7 +806,7 @@ function renderSocial() {
     <div class="card social-header"><div class="guild-emblem">⌘</div><div><strong>Гильдия «Крылья Эйры»</strong><div class="small muted" style="margin-top:4px">12 участников · город Лиор</div></div><button class="text-action" data-action="visit-poi" data-poi-id="guild">К гильдии →</button></div>
     <div class="section-head"><h2>Запросы на помощь</h2><button data-action="create-order">Создать</button></div>
     <div class="list-stack">
-      <div class="card card-pad"><div class="quest-meta"><span class="badge badge-gold">ПРОФЕССИЯ: КУЗНЕЦ</span><span class="badge badge-rose">Нужен Рудокоп</span></div><h3>Материал для маяка</h3><p class="small">Нужна руда для детали сигнального узла.</p><button class="btn btn-primary btn-small" data-action="help-order">Откликнуться</button></div>
+      <div class="card card-pad"><div class="quest-meta"><span class="badge badge-gold profession-badge-inline">${professionIconMarkup('blacksmith')}ПРОФЕССИЯ: КУЗНЕЦ</span><span class="badge badge-rose">Нужен Рудокоп</span></div><h3>Материал для маяка</h3><p class="small">Нужна руда для детали сигнального узла.</p><button class="btn btn-primary btn-small" data-action="help-order">Откликнуться</button></div>
       <div class="card card-pad"><div class="quest-meta"><span class="badge badge-teal">БОЕВОЙ КЛАСС</span><span class="badge">Нужен Следопыт</span></div><h3>Проверка маршрута</h3><p class="small">Помоги разведать путь к старому маяку.</p><button class="btn btn-secondary btn-small" data-action="help-order">Посмотреть</button></div>
     </div>
     <div class="section-head"><h2>Недавние помощники</h2><button data-action="friends">Все</button></div>
@@ -763,13 +900,15 @@ function beginMapTravel(targetX, targetY) {
   const fromBiome = getBiomeId(state.position.x, state.position.y);
   const toBiome = getBiomeId(targetX, targetY);
   const biomeTransition = fromBiome !== toBiome;
-  const durationMs = (biomeTransition ? MAP_CONFIG.borderStepSeconds : MAP_CONFIG.stepSeconds) * 1000;
+  const gameMinutes = getMovementGameMinutes({ biomeTransition });
+  const durationMs = getMovementDurationMs(biomeTransition);
+  const startedAt = Date.now();
   state.travel = {
     from: { ...state.position }, to: { x: targetX, y: targetY },
-    fromBiome, toBiome, biomeTransition, durationMs,
-    gameMinutes: MAP_CONFIG.gameMinutesPerStep + (biomeTransition ? 3 : 0),
-    startedAt: Date.now(), endsAt: Date.now() + durationMs
+    fromBiome, toBiome, biomeTransition, durationMs, gameMinutes,
+    startedAt, endsAt: startedAt + durationMs
   };
+  saveWorldProgress();
   render();
   clearInterval(travelInterval);
   travelInterval = setInterval(updateTravelTicker, 200);
@@ -786,6 +925,7 @@ function updateTravelTicker() {
   const arrival = state.travel;
   state.position = { ...arrival.to };
   state.travel = null;
+  saveWorldProgress();
   clearInterval(travelInterval);
   const poi = getPoiAt(state.position.x, state.position.y);
   const biome = BIOME_INFO[arrival.toBiome];
@@ -844,9 +984,10 @@ function applySelection() {
   if (type === 'class') state.classId = selectedId;
   else state.professionId = selectedId;
   const chosen = type === 'class' ? cls() : prof();
+  const chosenIcon = type === 'class' ? chosen.glyph : professionIconMarkup(chosen.id, 'profession-icon notification-profession-icon');
   state.modalChoice = null;
   closeModal();
-  addNotification(`${type === 'class' ? 'Боевой класс' : 'Профессия'} изменён`, `Теперь активен выбор «${chosen.name}». В тестовом режиме смена бесплатна.`, chosen.glyph, 'Настройки');
+  addNotification(`${type === 'class' ? 'Боевой класс' : 'Профессия'} изменён`, `Теперь активен выбор «${chosen.name}». В тестовом режиме смена бесплатна.`, chosenIcon, 'Настройки');
   render();
   showToast(`${chosen.name} выбран бесплатно · тестовый режим`);
 }
@@ -923,7 +1064,7 @@ document.addEventListener('click', (event) => {
     case 'go-class': go('choose-class'); break;
     case 'finish-intro': go('choose-profession'); break;
     case 'go-intro': go('intro'); break;
-    case 'finish-creation': go('home'); showToast('Демо-персонаж создан · прогресс не сохранён'); break;
+    case 'finish-creation': go('home'); showToast('Демо-персонаж создан · без серверной синхронизации'); break;
     case 'open-quests': go('quests'); break;
     case 'open-character': go('character'); break;
     case 'open-city': go('city'); break;
@@ -941,7 +1082,7 @@ document.addEventListener('click', (event) => {
     case 'toggle-auto-update': {
       state.autoUpdateEnabled = !state.autoUpdateEnabled;
       saveAutoUpdatePreference(state.autoUpdateEnabled);
-      addNotification(state.autoUpdateEnabled ? 'Автопроверка включена' : 'Автопроверка выключена', state.autoUpdateEnabled ? 'Проверка GitHub Releases будет запускаться при открытии приложения.' : 'Проверку обновлений можно запустить вручную в любой момент.', '↻', 'Настройки');
+      addNotification(state.autoUpdateEnabled ? 'Автопроверка включена' : 'Автопроверка выключена', state.autoUpdateEnabled ? 'Проверка манифеста сборки и GitHub Releases будет запускаться при открытии приложения.' : 'Проверку обновлений можно запустить вручную в любой момент.', '↻', 'Настройки');
       render();
       showToast(state.autoUpdateEnabled ? 'Автопроверка GitHub включена' : 'Автопроверка GitHub выключена');
       if (state.autoUpdateEnabled) checkGithubUpdates();
@@ -949,9 +1090,9 @@ document.addEventListener('click', (event) => {
     }
     case 'check-github': checkGithubUpdates(); break;
     case 'open-latest-release': {
-      const releaseUrl = (state.latestRelease && state.latestRelease.html_url) || `https://github.com/${UPDATE_REPOSITORY}/releases`;
-      if (window.EchoAstraAndroid && typeof window.EchoAstraAndroid.openRelease === 'function') window.EchoAstraAndroid.openRelease(releaseUrl);
-      else window.open(releaseUrl, '_blank', 'noopener');
+      const updateUrl = (state.latestRelease && (state.latestRelease.apk_url || state.latestRelease.html_url)) || RELEASES_PAGE;
+      if (window.EchoAstraAndroid && typeof window.EchoAstraAndroid.openRelease === 'function') window.EchoAstraAndroid.openRelease(updateUrl);
+      else window.open(updateUrl, '_blank', 'noopener');
       break;
     }
     case 'open-class-selector': openSelectionModal('class'); break;
@@ -997,4 +1138,10 @@ document.addEventListener('keydown', (event) => {
 });
 
 render();
+updateMoscowClocks();
+window.setInterval(updateMoscowClocks, 1000);
+if (state.travel) {
+  if (getTravelRemainingMs() === 0) updateTravelTicker();
+  else travelInterval = window.setInterval(updateTravelTicker, 200);
+}
 if (state.autoUpdateEnabled) window.setTimeout(() => checkGithubUpdates(), 900);

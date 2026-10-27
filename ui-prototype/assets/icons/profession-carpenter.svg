@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Лесоруб и плотник">
+  <path d="M13 45 42 16l8 8-29 29-8-8Z" stroke="#C99A6B" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m38 20 7 7m-13-1 7 7m-13-1 7 7m-13-1 7 7" stroke="#F5D9AA" stroke-width="3" stroke-linecap="round"/>
+  <path d="M13 16h15v5H18v10h-5V16Z" stroke="#65D6D0" stroke-width="3.5" stroke-linejoin="round"/>
+</svg>
