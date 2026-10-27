@@ -35,7 +35,7 @@ import java.util.concurrent.Executors;
 /** Thin Android shell for the offline UI prototype and optional GitHub build checks. */
 public final class MainActivity extends Activity {
     private static final String BUILD_MANIFEST_API =
-            "https://api.github.com/repos/AlfaGideon/RPGGameAnime/contents/apk-output/version.json?ref=arena%2Ff45db89b-rpggameanime";
+            "https://api.github.com/repos/AlfaGideon/RPGGameAnime/contents/apk-output/version.json?ref=arena%2Fd3628144-rpggameanime";
     private static final String RELEASES_API =
             "https://api.github.com/repos/AlfaGideon/RPGGameAnime/releases/latest";
     private static final String RELEASES_PAGE =

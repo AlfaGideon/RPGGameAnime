@@ -28,6 +28,13 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v5
 
+      - name: Test combat engine and JavaScript syntax
+        run: |
+          node --check ui-prototype/app.js
+          node --check ui-prototype/movement-engine.js
+          node --check ui-prototype/combat-engine.js
+          node --test tests/*.test.js
+
       - name: Set up Java 17
         uses: actions/setup-java@v5
         with:
@@ -57,6 +64,8 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -q "^package: name='com.rpggameanime.prototype'"
           unzip -l "$apk" | grep -q 'assets/index.html'
           unzip -l "$apk" | grep -q 'assets/styles.css'
+          unzip -l "$apk" | grep -q 'assets/movement-engine.js'
+          unzip -l "$apk" | grep -q 'assets/combat-engine.js'
           unzip -l "$apk" | grep -q 'assets/app.js'
           unzip -l "$apk" | grep -q 'assets/assets/echo-astra-logo.png'
           for class_art in guardian duelist ranger arcanist warden; do
@@ -81,7 +90,7 @@ jobs:
           retention-days: 30
 
       - name: Save APK and build manifest on the Arena branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/f45db89b-rpggameanime'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/d3628144-rpggameanime'
         env:
           VERSION_NAME: 0.2.${{ github.run_number }}
         run: |
@@ -124,7 +133,7 @@ jobs:
           fi
 
       - name: Publish a versioned GitHub release for existing clients
-        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/f45db89b-rpggameanime'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/d3628144-rpggameanime'
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION_NAME: 0.2.${{ github.run_number }}

@@ -31,6 +31,9 @@ const combatClasses = [
   }
 ];
 
+const MovementEngine = window.EchoAstraMovement;
+const CombatEngine = window.EchoAstraCombat;
+
 const professions = [
   { id: 'blacksmith', name: 'Кузнец', role: 'Создание предметов', summary: 'Кует инструменты, детали и снаряжение.', work: 'Заказы кузницы', workText: 'Две заявки ждут материалы. Для следующей детали нужна руда.', action: 'Открыть мастерскую', accent: '#f2c66d' },
   { id: 'farmer', name: 'Фермер', role: 'Ферма и животноводство', summary: 'Выращивает пищу, шерсть и сырьё для ремесла.', work: 'Дела хозяйства', workText: 'Проверить урожай, собрать шерсть и подготовить заказ на шкуры.', action: 'Осмотреть ферму', accent: '#9bd28a' },
@@ -65,13 +68,6 @@ const GAME_CLOCK_RATE = 5; // Five in-game hours pass per one real hour.
 const WORLD_MAP_VERSION = 2;
 const MAP_CONFIG = { width: 1000, height: 1000, localSize: 10, biomeSize: 10, worldRegionSize: 100 };
 const LIOR_CITY = { xMin: 491, xMax: 500, yMin: 491, yMax: 500, start: { x: 496, y: 496 } };
-const MOVEMENT_RULES = {
-  classGameMinutes: { guardian: 8, duelist: 6, ranger: 4, arcanist: 6, warden: 7 },
-  professionMinuteModifier: { blacksmith: 1, farmer: 0, herbalist: -1, miner: 2, carpenter: 1, tanner: 1, builder: 0 },
-  biomeTransitionMinutes: 3,
-  minimumGameMinutes: 3,
-  realMillisecondsPerGameMinute: 60000 / GAME_CLOCK_RATE
-};
 const BIOME_INFO = {
   city: { name: 'Лиор · городская локация', short: 'Город', glyph: '⌂' },
   cloud: { name: 'Белые облака', short: 'Облака · нужен транспорт', glyph: '☁' },
@@ -298,7 +294,7 @@ function saveQuestTimers() {
 }
 
 const UPDATE_REPOSITORY = 'AlfaGideon/RPGGameAnime';
-const UPDATE_BRANCH = 'arena/f45db89b-rpggameanime';
+const UPDATE_BRANCH = 'arena/d3628144-rpggameanime';
 const BUILD_MANIFEST_API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/contents/apk-output/version.json?ref=${encodeURIComponent(UPDATE_BRANCH)}`;
 const RELEASES_API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/releases/latest`;
 const RELEASES_PAGE = `https://github.com/${UPDATE_REPOSITORY}/releases`;
@@ -338,22 +334,26 @@ function readWorldProgress() {
     const savedTravel = saved.travel;
     if (!savedTravel || !validCell(savedTravel.from) || !validCell(savedTravel.to)) return { position, travel: null };
     const startedAt = Number(savedTravel.startedAt);
-    const endsAt = Number(savedTravel.endsAt);
-    const durationMs = Number(savedTravel.durationMs);
-    if (!Number.isFinite(startedAt) || !Number.isFinite(endsAt) || !Number.isFinite(durationMs) || durationMs <= 0) return { position, travel: null };
+    const storedEndsAt = Number(savedTravel.endsAt);
+    const storedDurationMs = Number(savedTravel.durationMs);
+    if (!Number.isFinite(startedAt) || !Number.isFinite(storedEndsAt) || !Number.isFinite(storedDurationMs) || storedDurationMs <= 0) return { position, travel: null };
     const from = { x: Number(savedTravel.from.x), y: Number(savedTravel.from.y) };
     const to = { x: Number(savedTravel.to.x), y: Number(savedTravel.to.y) };
     if (isTerrainBlocked(from.x, from.y) || isTerrainBlocked(to.x, to.y)) return { position, travel: null };
+    const classId = combatClasses.some(item => item.id === savedTravel.classId) ? savedTravel.classId : 'guardian';
+    const professionId = professions.some(item => item.id === savedTravel.professionId) ? savedTravel.professionId : 'blacksmith';
+    const durationMs = getMovementDurationMs({ classId, professionId });
+    const endsAt = startedAt + durationMs;
     if (endsAt <= Date.now()) return { position: to, travel: null };
     const fromBiome = getBiomeId(from.x, from.y);
     const toBiome = getBiomeId(to.x, to.y);
-    const gameEndsAt = Number(savedTravel.gameEndsAt) || getGameTimestamp(endsAt);
+    const gameEndsAt = getGameTimestamp(endsAt);
     return {
       position: from,
       travel: {
         from, to, fromBiome, toBiome, biomeTransition: fromBiome !== toBiome,
-        durationMs, startedAt, endsAt, gameEndsAt,
-        gameMinutes: Number(savedTravel.gameMinutes) || Math.ceil(durationMs / MOVEMENT_RULES.realMillisecondsPerGameMinute)
+        classId, professionId, durationMs, startedAt, endsAt, gameEndsAt,
+        gameDurationSeconds: getMovementGameSeconds(durationMs)
       }
     };
   } catch (error) { return fallback; }
@@ -378,7 +378,26 @@ const navItems = [
   { id: 'social', label: 'Связь', icon: '✉' }
 ];
 
+const COMBAT_STORAGE_KEY = 'echo-astra.combat-v1';
+function readSavedCombatData() {
+  const empty = { encounter: null, history: { wins: 0, losses: 0, retreats: 0, xp: 0, marks: 0 } };
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(COMBAT_STORAGE_KEY) || 'null');
+    if (!saved || typeof saved !== 'object' || Array.isArray(saved)) return empty;
+    const history = saved.history && typeof saved.history === 'object' && !Array.isArray(saved.history) ? saved.history : {};
+    const safeCount = value => Math.max(0, Math.min(999999, Math.floor(Number(value) || 0)));
+    return {
+      encounter: CombatEngine.restoreEncounter(saved.encounter),
+      history: {
+        wins: safeCount(history.wins), losses: safeCount(history.losses), retreats: safeCount(history.retreats),
+        xp: safeCount(history.xp), marks: safeCount(history.marks)
+      }
+    };
+  } catch (error) { return empty; }
+}
+
 const initialWorldProgress = readWorldProgress();
+const initialCombatData = readSavedCombatData();
 
 const state = {
   screen: 'welcome',
@@ -393,6 +412,8 @@ const state = {
   position: initialWorldProgress.position,
   travel: initialWorldProgress.travel,
   hasCloudTransport: false,
+  combat: initialCombatData.encounter,
+  combatHistory: initialCombatData.history,
   questTimers: readSavedQuestTimers(),
   autoUpdateEnabled: readAutoUpdatePreference(),
   updateStatus: 'idle',
@@ -417,6 +438,7 @@ let toastTimer;
 
 const cls = () => combatClasses.find(x => x.id === state.classId) || combatClasses[0];
 const prof = () => professions.find(x => x.id === state.professionId) || professions[0];
+const getWalletMarks = () => 100 + state.combatHistory.marks;
 const esc = (s) => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const formatCell = (x, y) => `${String(x).padStart(3, '0')}:${String(y).padStart(3, '0')}`;
 const unreadNotificationCount = () => state.notifications.filter(item => item.unread).length;
@@ -431,13 +453,15 @@ function professionIconMarkup(professionId, className = 'profession-icon') {
 function classArtMarkup(combatClass = cls()) {
   return `<img class="class-profession-art-image" src="assets/classes/${combatClass.id}.png" alt="${esc(combatClass.name)} — иллюстрация боевого класса">`;
 }
-function getMovementGameMinutes({ biomeTransition = false, classId = state.classId, professionId = state.professionId } = {}) {
-  const classMinutes = MOVEMENT_RULES.classGameMinutes[classId] || MOVEMENT_RULES.classGameMinutes.guardian;
-  const professionModifier = MOVEMENT_RULES.professionMinuteModifier[professionId] || 0;
-  return Math.max(MOVEMENT_RULES.minimumGameMinutes, classMinutes + professionModifier + (biomeTransition ? MOVEMENT_RULES.biomeTransitionMinutes : 0));
+function getMovementDurationMs({ classId = 'guardian', professionId = 'blacksmith' } = {}) {
+  return MovementEngine.getCellDurationMs({ classId, professionId });
 }
-function getMovementDurationMs(biomeTransition = false) {
-  return getMovementGameMinutes({ biomeTransition }) * MOVEMENT_RULES.realMillisecondsPerGameMinute;
+function getMovementGameSeconds(durationMs = getMovementDurationMs()) {
+  return MovementEngine.getGameDurationSeconds(durationMs, GAME_CLOCK_RATE);
+}
+function formatMovementSeconds(durationMs) {
+  const seconds = durationMs / 1000;
+  return Number.isInteger(seconds) ? String(seconds) : String(Number(seconds.toFixed(2)));
 }
 const moscowClockFormatter = (() => {
   try {
@@ -466,6 +490,10 @@ function formatGameDuration(milliseconds) {
 function saveWorldProgress() {
   try { window.localStorage.setItem('echo-astra.world-progress', JSON.stringify({ mapVersion: WORLD_MAP_VERSION, position: state.position, travel: state.travel })); }
   catch (error) { /* Private browsing and file:// storage may be unavailable. */ }
+}
+function saveCombatData() {
+  try { window.localStorage.setItem(COMBAT_STORAGE_KEY, JSON.stringify({ encounter: state.combat, history: state.combatHistory })); }
+  catch (error) { /* Combat progress remains available for this session if storage is unavailable. */ }
 }
 function updateMoscowClocks() {
   const now = Date.now();
@@ -550,15 +578,17 @@ function renderMap() {
   const currentBiome = BIOME_INFO[currentBiomeId];
   const currentPoi = getPoiAt(x, y);
   const locationName = isInsideLior(x, y) ? 'Лиор · стартовый город' : (currentPoi ? currentPoi.name : currentBiome.name);
-  const progress = state.travel ? Math.min(100, ((Date.now() - state.travel.startedAt) / state.travel.durationMs) * 100) : 0;
+  const progress = state.travel ? Math.max(0, Math.min(100, ((Date.now() - state.travel.startedAt) / state.travel.durationMs) * 100)) : 0;
   const travelGameArrival = state.travel ? (Number(state.travel.gameEndsAt) || getGameTimestamp(state.travel.endsAt)) : 0;
+  const nextStepDurationMs = getMovementDurationMs({ classId: state.classId, professionId: state.professionId });
+  const nextStepGameSeconds = getMovementGameSeconds(nextStepDurationMs);
   const travelPanel = state.travel ? `
     <div class="card travel-panel">
       <div class="travel-panel-heading"><div><span class="eyebrow">перемещение</span><strong>Путь к клетке ${formatCell(state.travel.to.x, state.travel.to.y)}</strong></div><strong class="travel-countdown" data-travel-countdown>${formatCountdown(getTravelRemainingMs())}</strong></div>
       <div class="travel-progress"><span data-travel-progress style="width:${progress}%"></span></div>
-      <p>${state.travel.biomeTransition ? 'Переход между биомами · ' : ''}${state.travel.gameMinutes} игровых мин. · прибытие ${formatMoscowTime(state.travel.endsAt)} · игровое время прибытия ${formatMoscowClock(travelGameArrival)}. Скорость мира: 1 ч МСК = 5 ч игры.</p>
+      <p>${state.travel.gameDurationSeconds} игровых секунд · прибытие ${formatMoscowTime(state.travel.endsAt)} · игровое время прибытия ${formatMoscowClock(travelGameArrival)}. Игровые часы идут в 5 раз быстрее московских.</p>
     </div>` : `
-    <div class="map-travel-note"><span class="travel-note-icon">⌛</span><span><strong>${cls().name} + ${prof().name}: ${getMovementGameMinutes()} игровых мин.</strong> за клетку. Переход биома: +${MOVEMENT_RULES.biomeTransitionMinutes} мин. Темп: 1 ч МСК = 5 игровых ч (1 игровая минута = 12 сек. ожидания).</span></div>`;
+    <div class="map-travel-note"><span class="travel-note-icon">⌛</span><span><strong>${cls().name} + ${prof().name}: ${formatMovementSeconds(nextStepDurationMs)} сек. за клетку.</strong> Базовый шаг — 6 секунд; класс и профессия меняют темп, Следопыт быстрее Стража. Сейчас это ${nextStepGameSeconds} игровых секунд при соотношении 1 ч МСК = 5 ч игры. Хребты и скалы непроходимы, облакам нужен транспорт.</span></div>`;
 
   const tiles = [];
   for (let rowY = minY; rowY <= maxY; rowY += 1) {
@@ -662,7 +692,7 @@ function renderWelcome() {
     <section class="welcome-screen">
       <div class="welcome-brand">
         <div class="welcome-mark">ЭА</div>
-        <div><div class="eyebrow">мобильный UI-прототип</div><div class="small muted">аниме-MMORPG · интерфейс без игровых функций</div></div>
+        <div><div class="eyebrow">мобильный UI-прототип</div><div class="small muted">аниме-RPG · локальная демонстрационная игра</div></div>
       </div>
       <div class="welcome-art">
         <img class="welcome-logo-art" src="assets/echo-astra-logo.png" alt="Логотип «Эхо Астры»: парящий город под звёздным маяком">
@@ -675,7 +705,7 @@ function renderWelcome() {
           <button class="btn btn-primary btn-block" data-action="start-create">Создать персонажа <span aria-hidden="true">→</span></button>
           <button class="btn btn-secondary btn-block" data-action="quick-demo">Посмотреть демо-героя</button>
         </div>
-        <p class="demo-note">Это демонстрационный прототип без игрового сервера. Позиция, маршрут, игровые часы и сроки заданий сохраняются только на устройстве.</p>
+        <p class="demo-note">Без сетевого сервера: карта, часы, бой и прогресс схваток работают только на этом устройстве.</p>
       </div>
     </section>`;
 }
@@ -731,7 +761,7 @@ function renderHome() {
   screenEl.innerHTML = `
     <div class="player-strip">
       <div class="player-identity">${avatarButtonMarkup('player-portrait', true)}<div style="min-width:0"><div class="player-name">${esc(state.characterName || 'Астра')} · Уровень 1</div><div class="player-subtitle">${c.name} <span class="muted">·</span> ${p.name}</div></div></div>
-      <div class="currency-pill">✧ 100</div>
+      <div class="currency-pill">✧ ${getWalletMarks()}</div>
     </div>
     <div class="home-location-card card-flat"><span class="home-location-icon">⌖</span><div><strong>${isInsideLior(state.position.x, state.position.y) ? 'Лиор · стартовый город' : BIOME_INFO[getBiomeId(state.position.x, state.position.y)].name}</strong><small>Клетка ${formatCell(state.position.x, state.position.y)}</small></div><button class="text-action" data-nav="map">Карта →</button></div>
     <section class="hero-art ${inLior ? 'hero-art--lior' : ''}">
@@ -758,11 +788,11 @@ function renderHome() {
     </div>
     <div class="section-head"><h2>Быстрые действия</h2></div>
     <div class="action-row">
-      <button class="card action-tile" data-action="open-combat"><span class="tile-icon">⚔</span><strong>Испытание</strong><span>Демо-экран боя</span></button>
+      <button class="card action-tile" data-action="open-combat"><span class="tile-icon">⚔</span><strong>Испытание</strong><span>Пошаговый бой с Эхо</span></button>
       <button class="card action-tile" data-action="open-market"><span class="tile-icon">◈</span><strong>Рынок</strong><span>Заказы и товары</span></button>
       <button class="card action-tile" data-action="open-social"><span class="tile-icon">⌘</span><strong>Помощь</strong><span>Найти игрока</span></button>
     </div>
-    <div class="notice" style="margin-top:15px">Прототип интерфейса: классовые карточки меняются при выборе другого класса или профессии. Игровые действия здесь не выполняются.</div>`;
+    <div class="notice" style="margin-top:15px">Карта, часы и пошаговый бой работают локально на устройстве. Сетевые функции, постоянная экономика и общий игровой прогресс пока не реализованы.</div>`;
 }
 
 function getQuestRows() {
@@ -836,7 +866,7 @@ function renderCharacter() {
   const c = cls();
   const p = prof();
   const content = state.characterTab === 'Обзор' ? `
-    <div class="card card-pad"><div class="player-identity">${avatarButtonMarkup('player-portrait', true)}<div><div class="player-name">${esc(state.characterName || 'Астра')}</div><div class="player-subtitle">Уровень 1 · Откликнувшийся</div></div><span class="badge badge-gold">100 м</span></div>
+    <div class="card card-pad"><div class="player-identity">${avatarButtonMarkup('player-portrait', true)}<div><div class="player-name">${esc(state.characterName || 'Астра')}</div><div class="player-subtitle">Уровень 1 · Откликнувшийся</div></div><span class="badge badge-gold">${getWalletMarks()} м</span></div>
       <div class="stat-grid"><div class="card-flat stat-box"><strong>${c.damage}</strong><span>Урон</span></div><div class="card-flat stat-box"><strong>${c.durability}</strong><span>Стойкость</span></div><div class="card-flat stat-box"><strong>${c.support}</strong><span>Поддержка</span></div></div>
       <div class="list-card card-flat"><div class="list-icon">${c.glyph}</div><div class="list-copy"><strong>${c.name}</strong><span>${c.role}</span></div><span class="badge badge-teal">Боевой путь</span></div>
       <div class="list-card card-flat" style="margin-top:8px"><div class="list-icon profession-list-icon">${professionIconMarkup(p.id)}</div><div class="list-copy"><strong>${p.name}</strong><span>${p.role}</span></div><span class="badge badge-gold">Профессия</span></div>
@@ -1125,7 +1155,7 @@ const marketItems = [
 function renderMarket() {
   const shown = state.marketTab === 'Мои заявки' ? [] : marketItems.filter(x => state.marketTab === 'Аукцион' ? x.type === 'Аукцион' : x.type === 'Фиксированная цена');
   screenEl.innerHTML = `
-    <div class="page-title-row"><div><div class="eyebrow">лиорская торговая площадь</div><h1>Рынок</h1><p>Фиксированная цена · аукцион · лавки игроков.</p></div><span class="currency-pill">✧ 100</span></div>
+    <div class="page-title-row"><div><div class="eyebrow">лиорская торговая площадь</div><h1>Рынок</h1><p>Фиксированная цена · аукцион · лавки игроков.</p></div><span class="currency-pill">✧ ${getWalletMarks()}</span></div>
     <div class="segmented">${['Фиксированная цена','Аукцион','Мои заявки'].map(t=>`<button class="${state.marketTab===t?'active':''}" data-market-tab="${t}">${t}</button>`).join('')}</div>
     <div class="market-search"><input class="input" placeholder="Найти предмет"><button class="icon-button" data-action="filter-market">☷</button></div>
     <div class="section-head" style="margin-top:8px"><h2>${state.marketTab}</h2><button data-action="create-listing">+ Выставить</button></div>
@@ -1133,15 +1163,105 @@ function renderMarket() {
     <div class="notice" style="margin-top:13px">Комиссия 5% отображается до подтверждения. Без премиума заявки работают, пока игрок в сети; премиум оставляет магазин активным офлайн до 24 часов.</div>`;
 }
 
+function startCombatEncounter() {
+  if (state.combat && state.combat.status === 'active') { render(); return; }
+  state.combat = CombatEngine.createEncounter({ classId: cls().id, heroName: state.characterName || 'Астра', stats: cls() });
+  saveCombatData();
+  render();
+  showToast('Бой начался · твой ход');
+}
+
+function performCombatAction(action) {
+  if (!state.combat) return;
+  const previousStatus = state.combat.status;
+  const result = CombatEngine.applyAction(state.combat, action);
+  if (result.error) { showToast(result.error); return; }
+  state.combat = result.state;
+  if (previousStatus === 'active' && state.combat.status !== 'active') {
+    if (state.combat.status === 'victory') {
+      state.combatHistory.wins += 1;
+      state.combatHistory.xp += state.combat.result.xp;
+      state.combatHistory.marks += state.combat.result.marks;
+    } else if (state.combat.status === 'defeat') {
+      state.combatHistory.losses += 1;
+    } else if (state.combat.status === 'retreated') {
+      state.combatHistory.retreats += 1;
+    }
+  }
+  saveCombatData();
+  render();
+  if (state.combat.status === 'victory') showToast(`Победа · +${state.combat.result.xp} опыта · +${state.combat.result.marks} лунных марок`);
+  else if (state.combat.status === 'defeat') showToast('Герой пал · схватка проиграна');
+  else if (state.combat.status === 'retreated') showToast('Ты отступил из боя');
+}
+
 function renderCombat() {
-  const c = cls();
+  const fight = state.combat;
+  const combatClass = combatClasses.find(item => item.id === (fight && fight.classId)) || cls();
+  const skill = CombatEngine.getSkill(combatClass.id);
+  const previewStats = fight ? fight.player : CombatEngine.getPlayerStats(combatClass);
+  const enemyHp = fight ? fight.enemy.hp : 112;
+  const enemyMaxHp = fight ? fight.enemy.maxHp : 112;
+  const enemyHealthPercent = Math.max(0, Math.min(100, Math.round(enemyHp / enemyMaxHp * 100)));
+  const playerHealthPercent = Math.max(0, Math.min(100, Math.round(previewStats.hp / previewStats.maxHp * 100)));
+  const playerManaPercent = Math.max(0, Math.min(100, Math.round(previewStats.mana / previewStats.maxMana * 100)));
+  const active = Boolean(fight && fight.status === 'active');
+  const fightReward = fight && fight.result ? fight.result : { xp: 0, marks: 0 };
+  const intentText = fight && fight.enemy.intent === 'surge'
+    ? 'Сторож накапливает волну Эхо — приготовь защиту.'
+    : 'Сторож готовит обычный удар.';
+  const outcome = fight && fight.status !== 'active' ? {
+    victory: { title: 'Сигнал очищен', text: `Получено ${fightReward.xp} опыта и ${fightReward.marks} лунных марок.`, className: 'combat-result--win' },
+    defeat: { title: 'Герой пал', text: 'Отдохни и попробуй снова. Результат хранится только на этом устройстве.', className: 'combat-result--loss' },
+    retreated: { title: 'Ты отступил', text: 'Награды за незавершённую схватку не выдаются.', className: 'combat-result--retreat' }
+  }[fight.status] : null;
+  const skillError = active ? CombatEngine.getActionError(fight, 'skill') : '';
+  const potionError = active ? CombatEngine.getActionError(fight, 'potion') : '';
+  const combatLog = fight && fight.log.length
+    ? `<ol class="combat-log-list">${fight.log.slice(-8).map((entry, index) => `<li class="${index === fight.log.slice(-8).length - 1 ? 'latest' : ''}">${esc(entry)}</li>`).join('')}</ol>`
+    : '<p class="combat-log-empty">Сторож охраняет сигнальный узел. Победи его, чтобы очистить путь.</p>';
+  const history = state.combatHistory;
+
   screenEl.innerHTML = `
-    <div class="page-title-row"><div><div class="eyebrow">макет встречи · действия демонстрационные</div><h1>Сигнальный узел</h1><p>Испытание рядом с Лиором · группа 3/4</p></div><button class="back-button" data-nav="home" aria-label="Назад">←</button></div>
-    <div class="card encounter-card"><div class="quest-meta"><span class="badge badge-rose">ЭХО</span><span class="badge">Угроза: средняя</span></div><div class="encounter-figure">👁️‍🗨️</div><div style="display:flex;justify-content:space-between;align-items:center"><strong>Искажённый сторож</strong><span class="small muted">Состояние 72%</span></div><div class="health-line"><span></span></div></div>
-    <div class="section-head"><h2>Твоя очередь · ${c.name}</h2><span class="badge badge-teal">${c.role}</span></div>
-    <div class="skill-grid">${[[c.skill,c.encounterText],[`Защитное действие`, 'Снизить риск для группы.'],['Использовать предмет','Расходник из инвентаря.'],['Посмотреть ситуацию','Уточнить цель и состояние группы.']].map((x,i)=>`<button class="card skill-button" data-action="mock-skill"><strong>${i===0?c.glyph+' ':''}${x[0]}</strong><span>${x[1]}</span></button>`).join('')}</div>
-    <div class="section-head"><h2>Группа</h2></div><div class="card card-pad">${[['🛡','Ливен · Страж',83],['✧','Тая · Арканист',61],['✚','Мика · Хранитель',92]].map(x=>`<div class="member-row"><div class="member-avatar">${x[0]}</div><div class="member-info"><strong>${x[1]}</strong><div class="health-line"><span style="width:${x[2]}%;background:linear-gradient(90deg,#65d6d0,#86d59a)"></span></div></div><span class="tiny muted">${x[2]}%</span></div>`).join('')}</div>
-    <div class="notice" style="margin-top:12px">Кнопки не запускают бой и не меняют характеристики — это только проверка компоновки экрана.</div>`;
+    <div class="page-title-row combat-page-title">
+      <div><div class="eyebrow">локальное пошаговое сражение</div><h1>Сигнальный узел</h1><p>${fight ? `Раунд ${fight.round} · ${esc(fight.heroName)} · ${combatClass.name}` : 'Испытание рядом с Лиором · одиночная схватка'}</p></div>
+      <button class="back-button" data-nav="home" aria-label="Назад на главную">←</button>
+    </div>
+
+    <section class="card combat-enemy-card ${fight && fight.enemy.intent === 'surge' && active ? 'is-charging' : ''}">
+      <div class="combat-card-top"><span class="badge badge-rose">ЭХО</span><span class="badge">${active ? `Раунд ${fight.round}` : fight ? (outcome ? outcome.title : 'Схватка завершена') : 'Угроза · средняя'}</span></div>
+      <div class="combat-enemy-visual" aria-hidden="true">
+        <svg viewBox="0 0 120 120" role="presentation"><defs><radialGradient id="echo-core" cx="40%" cy="34%"><stop offset="0" stop-color="#ffdfb0"/><stop offset=".28" stop-color="#f07878"/><stop offset="1" stop-color="#612d5c"/></radialGradient></defs><circle class="echo-aura" cx="60" cy="60" r="48"/><path class="echo-shard" d="M60 8 73 31 102 22 91 49 114 62 89 75 98 102 69 91 55 114 45 87 17 96 29 69 6 55 33 43 24 16 51 29Z"/><ellipse cx="60" cy="59" rx="29" ry="22" fill="url(#echo-core)"/><path class="echo-eye" d="M38 60 Q60 38 82 60 Q60 82 38 60Z"/><circle cx="60" cy="60" r="8" class="echo-pupil"/><circle cx="63" cy="57" r="2.5" fill="#fff4d8"/></svg>
+      </div>
+      <div class="combat-enemy-heading"><div><strong>Искажённый сторож</strong><small>${active ? (fight.enemy.marked ? 'Помечен Следопытом · следующая атака усилена' : 'Хранитель сигнального узла') : 'Эхо у старого маяка'}</small></div><span class="combat-hp-value">${enemyHp}<small> / ${enemyMaxHp} HP</small></span></div>
+      <div class="combat-meter combat-meter--enemy" role="progressbar" aria-label="Здоровье сторожа" aria-valuemin="0" aria-valuemax="${enemyMaxHp}" aria-valuenow="${enemyHp}"><span style="width:${enemyHealthPercent}%"></span></div>
+      ${active ? `<div class="combat-intent ${fight.enemy.intent === 'surge' ? 'combat-intent--danger' : ''}" role="status"><span aria-hidden="true">${fight.enemy.intent === 'surge' ? '⚡' : '◈'}</span>${intentText}</div>` : ''}
+    </section>
+
+    <section class="card combat-player-card" style="--combat-accent:${combatClass.accent}">
+      <div class="combat-player-heading"><div class="combat-player-avatar"><img src="assets/cutouts/classes/${combatClass.id}.png" alt="" aria-hidden="true"></div><div class="combat-player-copy"><span class="eyebrow">${active ? 'твой ход' : 'боевой класс'}</span><strong>${esc(fight ? fight.heroName : state.characterName || 'Астра')}</strong><small>${combatClass.glyph} ${combatClass.name} · ${combatClass.role}</small></div><span class="combat-player-level">${combatClass.glyph}</span></div>
+      <div class="combat-resource-row"><span>Здоровье</span><strong>${previewStats.hp} / ${previewStats.maxHp}</strong></div>
+      <div class="combat-meter combat-meter--health" role="progressbar" aria-label="Здоровье героя" aria-valuemin="0" aria-valuemax="${previewStats.maxHp}" aria-valuenow="${previewStats.hp}"><span style="width:${playerHealthPercent}%"></span></div>
+      <div class="combat-resource-row combat-mana-row"><span>Энергия</span><strong>${previewStats.mana} / ${previewStats.maxMana}</strong></div>
+      <div class="combat-meter combat-meter--mana" role="progressbar" aria-label="Энергия героя" aria-valuemin="0" aria-valuemax="${previewStats.maxMana}" aria-valuenow="${previewStats.mana}"><span style="width:${playerManaPercent}%"></span></div>
+      <div class="combat-stat-chips"><span>⚔ Урон ${previewStats.attackPower}</span><span>⬟ Защита ${previewStats.defense}</span>${fight ? `<span>♥ Настои ${fight.player.potions}</span>` : '<span>♥ Настои 2</span>'}</div>
+    </section>
+
+    ${outcome ? `<section class="combat-result ${outcome.className}" role="status"><span class="combat-result-icon" aria-hidden="true">${fight.status === 'victory' ? '✦' : fight.status === 'defeat' ? '×' : '↩'}</span><div><strong>${outcome.title}</strong><p>${outcome.text}</p></div></section>` : ''}
+    ${!fight ? `<div class="notice teal-notice combat-intro-note">Управляй одним героем: атакуй, используй классовый навык, защищайся от тяжёлого удара или выпей настой. Бой и награды сохраняются локально, без игрового сервера.</div>` : ''}
+
+    ${active ? `<div class="section-head combat-actions-heading"><h2>Действия</h2><span class="badge badge-teal">Твой ход</span></div>
+      <div class="combat-action-grid">
+        <button class="card combat-action-card combat-action-card--attack" data-combat-action="attack"><span class="combat-action-icon">⚔</span><strong>Обычная атака</strong><small>Нанести базовый физический урон.</small><span class="combat-action-cost">Без затрат</span></button>
+        <button class="card combat-action-card combat-action-card--skill" data-combat-action="skill" ${skillError ? 'disabled' : ''} title="${esc(skillError || skill.description)}"><span class="combat-action-icon">${combatClass.glyph}</span><strong>${skill.name}</strong><small>${skill.description}</small><span class="combat-action-cost">−${skill.manaCost} энергии</span></button>
+        <button class="card combat-action-card combat-action-card--guard" data-combat-action="defend"><span class="combat-action-icon">⬟</span><strong>Защита</strong><small>Сильно ослабить следующий удар и восстановить энергию.</small><span class="combat-action-cost">Стойка</span></button>
+        <button class="card combat-action-card combat-action-card--potion" data-combat-action="potion" ${potionError ? 'disabled' : ''} title="${esc(potionError || 'Восстановить до 34 здоровья')}"><span class="combat-action-icon">✚</span><strong>Лечебный настой</strong><small>Восстановить до 34 здоровья.</small><span class="combat-action-cost">Осталось: ${fight.player.potions}</span></button>
+      </div>
+      <button class="combat-retreat-button" data-combat-action="retreat">Отступить из боя</button>` : fight ? `<button class="btn btn-primary btn-block combat-retry-button" data-combat-action="start">Начать новую схватку</button>` : `<button class="btn btn-primary btn-block combat-start-button" data-combat-action="start">Начать бой</button>`}
+
+    <section class="card combat-log-card"><div class="combat-log-heading"><strong>Ход боя</strong><span>${history.wins} побед · ${history.losses} поражений</span></div>${combatLog}</section>
+    <section class="combat-reward-card"><span class="combat-reward-glyph">✧</span><span><strong>Накоплено в этом прототипе</strong><small>${history.xp} опыта · ${history.marks} лунных марок · ${history.retreats} отступлений</small></span></section>
+    <p class="demo-note combat-demo-note">Одиночный бой против локального противника. Сетевая группа и серверная синхронизация не подключены.</p>`;
 }
 
 function render() {
@@ -1264,13 +1384,15 @@ function beginMapTravel(targetX, targetY) {
   const fromBiome = getBiomeId(state.position.x, state.position.y);
   const toBiome = getBiomeId(targetX, targetY);
   const biomeTransition = fromBiome !== toBiome;
-  const gameMinutes = getMovementGameMinutes({ biomeTransition });
-  const durationMs = getMovementDurationMs(biomeTransition);
+  const classId = state.classId;
+  const professionId = state.professionId;
+  const durationMs = getMovementDurationMs({ classId, professionId });
+  const gameDurationSeconds = getMovementGameSeconds(durationMs);
   const startedAt = Date.now();
   const endsAt = startedAt + durationMs;
   state.travel = {
     from: { ...state.position }, to: { x: targetX, y: targetY },
-    fromBiome, toBiome, biomeTransition, durationMs, gameMinutes,
+    fromBiome, toBiome, biomeTransition, classId, professionId, durationMs, gameDurationSeconds,
     startedAt, endsAt, gameEndsAt: getGameTimestamp(endsAt)
   };
   saveWorldProgress();
@@ -1283,7 +1405,7 @@ function updateTravelTicker() {
   if (!state.travel) { clearInterval(travelInterval); return; }
   const remaining = getTravelRemainingMs();
   document.querySelectorAll('[data-travel-countdown]').forEach(element => { element.textContent = formatCountdown(remaining); });
-  const progress = Math.min(100, ((Date.now() - state.travel.startedAt) / state.travel.durationMs) * 100);
+  const progress = Math.max(0, Math.min(100, ((Date.now() - state.travel.startedAt) / state.travel.durationMs) * 100));
   document.querySelectorAll('[data-travel-progress]').forEach(element => { element.style.width = `${progress}%`; });
   if (remaining > 0) return;
 
@@ -1326,7 +1448,7 @@ function visitPoi(id) {
     case 'guild': openModal(`Гильдия «Крылья Эйры» · клетка ${formatCell(point.x, point.y)}`, 'Ты вошёл в здание гильдии. Здесь будут состав, казна, городской совет и права участников.'); break;
     case 'quest-board': go('quests'); showToast(`Доска заданий Лиора · клетка ${formatCell(point.x, point.y)}`); break;
     case 'market': go('market'); showToast(`Торговая площадь · клетка ${formatCell(point.x, point.y)}`); break;
-    case 'beacon': openModal(`Старый сигнальный маяк · клетка ${formatCell(point.x, point.y)}`, 'Лесной тракт начинается за городской границей. Белые облака нельзя пересекать пешком без транспорта; переходы между биомами занимают дополнительное игровое время.'); break;
+    case 'beacon': openModal(`Старый сигнальный маяк · клетка ${formatCell(point.x, point.y)}`, 'Лесной тракт начинается за городской границей. Базовый шаг между клетками занимает 6 секунд (30 игровых секунд); класс и профессия немного меняют скорость. Белые облака нельзя пересекать пешком без транспорта.'); break;
     default: openModal(point.name, point.description);
   }
 }
@@ -1365,6 +1487,13 @@ function updateNotificationRead(id) {
 }
 
 document.addEventListener('click', (event) => {
+  const combatAction = event.target.closest('[data-combat-action]');
+  if (combatAction) {
+    if (combatAction.dataset.combatAction === 'start') startCombatEncounter();
+    else performCombatAction(combatAction.dataset.combatAction);
+    return;
+  }
+
   const nav = event.target.closest('[data-nav]');
   if (nav) { state.screen = nav.dataset.nav; render(); window.scrollTo(0, 0); return; }
 
