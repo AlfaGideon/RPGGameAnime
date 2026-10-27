@@ -419,6 +419,9 @@ const state = {
   updateStatus: 'idle',
   updateCheckInProgress: false,
   latestRelease: null,
+  apkDownloadStatus: 'idle',
+  apkDownloadProgress: 0,
+  apkDownloadMessage: '',
   modalChoice: null,
   notifications: [
     { id: 1, glyph: '✦', title: 'Добро пожаловать в Лиор', text: 'Ты начинаешь путь в портовом городе. Иара ждёт на клетке 496:496.', time: 'Сейчас', category: 'Сюжет', unread: true },
@@ -900,11 +903,37 @@ function getUpdateStatusText() {
   return 'Проверка версии ещё не выполнялась.';
 }
 
+function isApkDownloadBusy() {
+  return ['starting', 'downloading', 'verifying', 'permission', 'installing'].includes(state.apkDownloadStatus);
+}
+
+function getApkDownloadStatusText() {
+  if (state.apkDownloadStatus === 'starting') return 'Подготавливаем безопасную загрузку…';
+  if (state.apkDownloadStatus === 'downloading') return `Скачиваем APK…${state.apkDownloadProgress > 0 ? ` ${state.apkDownloadProgress}%` : ''}`;
+  if (state.apkDownloadStatus === 'verifying') return 'Проверяем SHA-256 и подпись APK…';
+  if (state.apkDownloadStatus === 'permission') return state.apkDownloadMessage || 'Разреши установку приложений для «Эхо Астры» в системных настройках и вернись в игру.';
+  if (state.apkDownloadStatus === 'installing') return state.apkDownloadMessage || 'Подтверди установку в системном окне Android.';
+  if (state.apkDownloadStatus === 'success') return state.apkDownloadMessage || 'Установка завершена.';
+  if (state.apkDownloadStatus === 'signature-mismatch') return state.apkDownloadMessage || 'Подпись не совпадает с установленной версией. Android не разрешит обновить её поверх.';
+  if (state.apkDownloadStatus === 'error') return state.apkDownloadMessage || 'Не удалось скачать или проверить APK. Попробуй ещё раз.';
+  return '';
+}
+
 function renderSettings() {
   const c = cls();
   const p = prof();
   const avatar = currentAvatar();
   const statusClass = state.updateStatus === 'update' ? 'update-found' : state.updateStatus === 'error' ? 'update-error' : '';
+  const nativeUpdater = Boolean(window.EchoAstraAndroid && typeof window.EchoAstraAndroid.downloadAndInstallApk === 'function');
+  const downloadBusy = isApkDownloadBusy();
+  const downloadStatusText = getApkDownloadStatusText();
+  const downloadButtonLabel = downloadBusy
+    ? state.apkDownloadStatus === 'downloading' ? 'Скачиваем APK…'
+      : state.apkDownloadStatus === 'verifying' ? 'Проверяем APK…'
+        : state.apkDownloadStatus === 'installing' ? 'Ожидаем подтверждения Android…'
+          : state.apkDownloadStatus === 'permission' ? 'Открой настройки Android…' : 'Подготавливаем…'
+    : nativeUpdater ? 'Скачать и установить в приложении' : 'Скачать APK';
+  const downloadProgress = Math.max(0, Math.min(100, Number(state.apkDownloadProgress) || 0));
   screenEl.innerHTML = `
     <div class="page-title-row"><div><div class="eyebrow">персональные параметры</div><h1>Настройки</h1><p>Обновления и тестовые настройки героя.</p></div><span class="badge badge-teal">ТЕСТ</span></div>
     <section class="card settings-section update-settings-card">
@@ -913,8 +942,9 @@ function renderSettings() {
       <div class="update-status ${statusClass}" aria-live="polite"><span class="status-pulse ${state.updateCheckInProgress ? 'checking' : ''}"></span><span>${getUpdateStatusText()}</span></div>
       <div class="update-version-row"><span>Установлено</span><strong>v${CURRENT_APP_VERSION}${CURRENT_APP_VERSION_CODE ? ` · код ${CURRENT_APP_VERSION_CODE}` : ''}</strong></div>
       <button class="btn btn-primary btn-block" data-action="check-github" ${state.updateCheckInProgress ? 'disabled' : ''}>${state.updateCheckInProgress ? 'Проверяем…' : 'Проверить GitHub сейчас'}</button>
-      ${state.latestRelease && state.updateStatus === 'update' ? `<button class="btn btn-secondary btn-block release-link-button" data-action="open-latest-release">${state.latestRelease.apk_url ? `Скачать APK ${esc(state.latestRelease.version_name)} →` : `Открыть страницу релиза ${esc(state.latestRelease.tag_name)} →`}</button>` : ''}
-      <p class="settings-footnote">Источник: <code>apk-output/version.json</code> и резервно <code>${UPDATE_REPOSITORY}/releases/latest</code>. Android попросит подтвердить установку. Для обновления поверх старой версии нужна одинаковая подпись APK.</p>
+      ${state.latestRelease && state.updateStatus === 'update' ? `<button class="btn btn-secondary btn-block release-link-button" data-action="${state.latestRelease.apk_url ? 'download-latest-apk' : 'open-latest-release'}" ${downloadBusy || (nativeUpdater && state.latestRelease.apk_url && !state.latestRelease.sha256) ? 'disabled' : ''}>${state.latestRelease.apk_url ? `${downloadButtonLabel} · v${esc(state.latestRelease.version_name)}` : `Открыть страницу релиза ${esc(state.latestRelease.tag_name)} →`}</button>` : ''}
+      ${downloadStatusText ? `<div class="update-download-status ${['error', 'signature-mismatch'].includes(state.apkDownloadStatus) ? 'update-download-error' : ''}" aria-live="polite"><div class="update-download-status-copy">${esc(downloadStatusText)}</div>${state.apkDownloadStatus === 'downloading' ? `<div class="update-download-progress" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${downloadProgress}"><span style="width:${downloadProgress}%"></span></div>` : ''}</div>` : ''}
+      <p class="settings-footnote">APK загружается в приложение, SHA-256 проверяется перед установкой. Android показывает системное подтверждение и может один раз попросить разрешить установку для «Эхо Астры». Обновление поверх требует одинаковой подписи APK.</p>
     </section>
     <div class="section-head"><h2>Аватар игрока</h2><span class="badge">Галерея игры</span></div>
     <section class="card settings-choice-card avatar-settings-card">
@@ -1041,7 +1071,7 @@ function finishGithubUpdateCheck(result) {
     state.latestRelease = release;
     if (isRemoteBuildNewer(release)) {
       state.updateStatus = 'update';
-      addNotification(`Доступно обновление ${release.version_name}`, 'Новая APK-сборка найдена. Нажми «Скачать APK», чтобы открыть прямую загрузку.', '↻', 'Обновление', `build-${release.version_code || release.version_name}`);
+      addNotification(`Доступно обновление ${release.version_name}`, 'Новая APK-сборка найдена. Скачай её в приложении и подтверди установку Android.', '↻', 'Обновление', `build-${release.version_code || release.version_name}`);
     } else {
       state.updateStatus = 'current';
       addNotification('Приложение обновлено', `Установлена актуальная сборка ${release.version_name}.`, '✓', 'Обновление', `current-${release.version_code || release.version_name}`);
@@ -1054,6 +1084,17 @@ function finishGithubUpdateCheck(result) {
 window.onGitHubUpdatePayload = function (payload) {
   try { finishGithubUpdateCheck(JSON.parse(payload)); }
   catch (error) { finishGithubUpdateCheck({ status: 'error' }); }
+};
+
+window.onAndroidUpdateDownloadStatus = function (payload) {
+  let result;
+  try { result = typeof payload === 'string' ? JSON.parse(payload) : payload; }
+  catch (error) { result = { status: 'error', message: 'Не удалось получить состояние загрузки.' }; }
+  state.apkDownloadStatus = String(result && result.status || 'error');
+  state.apkDownloadProgress = Number(result && result.progress) || 0;
+  state.apkDownloadMessage = String(result && result.message || '');
+  if (state.screen === 'settings') renderSettings();
+  else renderShell();
 };
 
 async function checkGithubUpdates() {
@@ -1081,9 +1122,15 @@ async function checkGithubUpdates() {
       if (!releaseResponse.ok) throw new Error(`GitHub HTTP ${releaseResponse.status}`);
       const release = await releaseResponse.json();
       const apk = (release.assets || []).find(asset => /\.apk$/i.test(asset.name || ''));
+      const notes = String(release.body || '');
+      const releaseSha256 = String(apk && apk.digest || '').replace(/^sha256:/i, '')
+        || ((notes.match(/SHA-256\s*:\s*([a-f0-9]{64})/i) || [])[1] || '');
+      const versionCodeMatch = notes.match(/Version code\s*:\s*(\d+)/i);
       finishGithubUpdateCheck({
         status: 'ok', tag_name: release.tag_name, html_url: release.html_url,
-        apk_url: apk ? apk.browser_download_url : '', version_name: String(release.tag_name || '').replace(/^v/i, '')
+        apk_url: apk ? apk.browser_download_url : '', sha256: releaseSha256,
+        version_code: versionCodeMatch ? Number(versionCodeMatch[1]) : 0,
+        version_name: String(release.tag_name || '').replace(/^v/i, '')
       });
       return;
     }
@@ -1596,6 +1643,37 @@ document.addEventListener('click', (event) => {
       break;
     }
     case 'check-github': checkGithubUpdates(); break;
+    case 'download-latest-apk': {
+      const update = state.latestRelease;
+      if (!update || !update.apk_url) break;
+      if (window.EchoAstraAndroid && typeof window.EchoAstraAndroid.downloadAndInstallApk === 'function') {
+        if (!/^[a-f0-9]{64}$/i.test(String(update.sha256 || ''))) {
+          state.apkDownloadStatus = 'error';
+          state.apkDownloadMessage = 'В манифесте нет корректного SHA-256. Загрузка остановлена, чтобы не устанавливать непроверенный APK.';
+          renderSettings();
+          break;
+        }
+        state.apkDownloadStatus = 'starting';
+        state.apkDownloadProgress = 0;
+        state.apkDownloadMessage = '';
+        renderSettings();
+        try {
+          window.EchoAstraAndroid.downloadAndInstallApk(
+            update.apk_url,
+            update.sha256,
+            update.version_name,
+            Number(update.version_code || 0)
+          );
+        } catch (error) {
+          state.apkDownloadStatus = 'error';
+          state.apkDownloadMessage = 'Не удалось начать загрузку APK. Попробуй ещё раз.';
+          renderSettings();
+        }
+      } else {
+        window.open(update.apk_url, '_blank', 'noopener');
+      }
+      break;
+    }
     case 'open-latest-release': {
       const updateUrl = (state.latestRelease && (state.latestRelease.apk_url || state.latestRelease.html_url)) || RELEASES_PAGE;
       if (window.EchoAstraAndroid && typeof window.EchoAstraAndroid.openRelease === 'function') window.EchoAstraAndroid.openRelease(updateUrl);

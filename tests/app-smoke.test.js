@@ -6,7 +6,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-function bootPrototype() {
+function bootPrototype(androidBridge) {
   const elements = new Map();
   const listeners = {};
   const makeElement = () => ({
@@ -38,7 +38,8 @@ function bootPrototype() {
     clearTimeout() {},
     scrollTo() {},
     open() {},
-    console
+    console,
+    ...(androidBridge ? { EchoAstraAndroid: androidBridge } : {})
   };
   sandbox.window = sandbox;
   const context = vm.createContext(sandbox);
@@ -48,6 +49,7 @@ function bootPrototype() {
   }
   return {
     screen: elements.get('screen'),
+    window: sandbox,
     click(selector, dataset) {
       const element = { dataset };
       const target = { closest(query) { return query === selector ? element : null; } };
@@ -85,4 +87,35 @@ test('victory awards local marks that appear in the wallet', () => {
   assert.match(app.screen.innerHTML, /Сигнал очищен/);
   app.click('[data-nav]', { nav: 'home' });
   assert.match(app.screen.innerHTML, /✧ 112/);
+});
+
+test('Android updater downloads the checked release in-app and renders progress', () => {
+  const calls = [];
+  const app = bootPrototype({
+    downloadAndInstallApk(...args) { calls.push(args); }
+  });
+  app.click('[data-action]', { action: 'open-settings' });
+  app.window.onGitHubUpdatePayload(JSON.stringify({
+    status: 'ok',
+    version_name: '0.2.16',
+    version_code: 1016,
+    tag_name: 'v0.2.16',
+    apk_url: 'https://github.com/AlfaGideon/RPGGameAnime/releases/download/v0.2.16/Echo-Astra-UI-Prototype.apk',
+    sha256: 'a'.repeat(64)
+  }));
+  assert.match(app.screen.innerHTML, /Скачать и установить в приложении/);
+
+  app.click('[data-action]', { action: 'download-latest-apk' });
+  assert.deepEqual(calls, [[
+    'https://github.com/AlfaGideon/RPGGameAnime/releases/download/v0.2.16/Echo-Astra-UI-Prototype.apk',
+    'a'.repeat(64),
+    '0.2.16',
+    1016
+  ]]);
+
+  app.window.onAndroidUpdateDownloadStatus(JSON.stringify({
+    status: 'downloading', message: 'Скачиваем APK…', progress: 45
+  }));
+  assert.match(app.screen.innerHTML, /Скачиваем APK… 45%/);
+  assert.match(app.screen.innerHTML, /aria-valuenow="45"/);
 });

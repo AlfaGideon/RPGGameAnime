@@ -5,10 +5,34 @@ plugins {
 def prototypeRunNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '0').toInteger()
 def prototypeVersionCode = 1000 + prototypeRunNumber
 def prototypeVersionName = prototypeRunNumber > 0 ? "0.2.${prototypeRunNumber}" : '0.2.0'
+def signingKeyStoreBase64 = System.getenv('ANDROID_SIGNING_KEYSTORE_BASE64') ?: ''
+def signingKeyStorePassword = System.getenv('ANDROID_SIGNING_KEYSTORE_PASSWORD') ?: ''
+def stableSigningEnabled = !signingKeyStoreBase64.trim().isEmpty() && !signingKeyStorePassword.trim().isEmpty()
+def stableSigningKeyStore = new File(buildDir, 'signing/echo-astra-release.p12')
+
+if (signingKeyStoreBase64.trim().isEmpty() != signingKeyStorePassword.trim().isEmpty()) {
+    throw new GradleException('Set both ANDROID_SIGNING_KEYSTORE_BASE64 and ANDROID_SIGNING_KEYSTORE_PASSWORD, or leave both unset.')
+}
+if (stableSigningEnabled) {
+    stableSigningKeyStore.parentFile.mkdirs()
+    stableSigningKeyStore.bytes = java.util.Base64.getDecoder().decode(signingKeyStoreBase64.replaceAll('\\s', ''))
+}
 
 android {
     namespace 'com.rpggameanime.prototype'
     compileSdk 35
+
+    signingConfigs {
+        stableRelease {
+            if (stableSigningEnabled) {
+                storeFile stableSigningKeyStore
+                storePassword signingKeyStorePassword
+                keyAlias 'echo-astra-release'
+                keyPassword signingKeyStorePassword
+                storeType 'PKCS12'
+            }
+        }
+    }
 
     defaultConfig {
         applicationId 'com.rpggameanime.prototype'
@@ -16,6 +40,12 @@ android {
         targetSdk 34
         versionCode prototypeVersionCode
         versionName prototypeVersionName
+    }
+
+    buildTypes {
+        debug {
+            if (stableSigningEnabled) signingConfig signingConfigs.stableRelease
+        }
     }
 
     compileOptions {

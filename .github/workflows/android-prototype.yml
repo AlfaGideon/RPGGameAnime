@@ -24,6 +24,9 @@ jobs:
     name: Build installable debug APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+      ANDROID_SIGNING_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEYSTORE_PASSWORD }}
     steps:
       - name: Check out source
         uses: actions/checkout@v5
@@ -61,6 +64,11 @@ jobs:
           set -euo pipefail
           apk="android-prototype/app/build/outputs/apk/debug/app-debug.apk"
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$apk"
+          if [ -n "${ANDROID_SIGNING_KEYSTORE_BASE64:-}" ] && [ -n "${ANDROID_SIGNING_KEYSTORE_PASSWORD:-}" ]; then
+            expected_fingerprint="$(keytool -list -v -storetype PKCS12 -keystore android-prototype/app/build/signing/echo-astra-release.p12 -storepass "$ANDROID_SIGNING_KEYSTORE_PASSWORD" -alias echo-astra-release | awk -F': ' '/SHA256:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+            actual_fingerprint="$("$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --print-certs "$apk" | awk -F': ' '/Signer #1 certificate SHA-256 digest:/{print $2; exit}' | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+            test -n "$expected_fingerprint" && test "$expected_fingerprint" = "$actual_fingerprint" || { echo 'APK signature does not match the configured persistent signing key.' >&2; exit 1; }
+          fi
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$apk" | grep -q "^package: name='com.rpggameanime.prototype'"
           unzip -l "$apk" | grep -q 'assets/index.html'
           unzip -l "$apk" | grep -q 'assets/styles.css'
@@ -81,6 +89,10 @@ jobs:
             unzip -l "$apk" | grep -q "assets/assets/icons/profession-$profession.svg"
           done
 
+      - name: Warn when stable APK signing is not configured
+        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/d3628144-rpggameanime' && (env.ANDROID_SIGNING_KEYSTORE_BASE64 == '' || env.ANDROID_SIGNING_KEYSTORE_PASSWORD == '')
+        run: echo 'Stable APK signing secrets are missing; this debug build will not be published as a versioned release.'
+
       - name: Publish APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -90,7 +102,7 @@ jobs:
           retention-days: 30
 
       - name: Save APK and build manifest on the Arena branch
-        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/d3628144-rpggameanime'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/arena/d3628144-rpggameanime' && env.ANDROID_SIGNING_KEYSTORE_BASE64 != '' && env.ANDROID_SIGNING_KEYSTORE_PASSWORD != ''
         env:
           VERSION_NAME: 0.2.${{ github.run_number }}
         run: |
@@ -133,7 +145,7 @@ jobs:
           fi
 
       - name: Publish a versioned GitHub release for existing clients
-        if: github.event_name == 'push' && github.ref == 'refs/heads/arena/d3628144-rpggameanime'
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/arena/d3628144-rpggameanime' && env.ANDROID_SIGNING_KEYSTORE_BASE64 != '' && env.ANDROID_SIGNING_KEYSTORE_PASSWORD != ''
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION_NAME: 0.2.${{ github.run_number }}
