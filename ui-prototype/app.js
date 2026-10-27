@@ -107,7 +107,7 @@ const UPDATE_BRANCH = 'arena/f45db89b-rpggameanime';
 const BUILD_MANIFEST_API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/contents/apk-output/version.json?ref=${encodeURIComponent(UPDATE_BRANCH)}`;
 const RELEASES_API = `https://api.github.com/repos/${UPDATE_REPOSITORY}/releases/latest`;
 const RELEASES_PAGE = `https://github.com/${UPDATE_REPOSITORY}/releases`;
-const RAW_APK_URL = `https://raw.githubusercontent.com/${UPDATE_REPOSITORY}/${UPDATE_BRANCH}/apk-output/Echo-Astra-UI-Prototype.apk`;
+const LATEST_APK_URL = `https://github.com/${UPDATE_REPOSITORY}/releases/latest/download/Echo-Astra-UI-Prototype.apk`;
 
 function readInstalledBuild() {
   const fallback = { versionName: '0.1.0', versionCode: 0 };
@@ -766,7 +766,7 @@ async function checkGithubUpdates() {
     const manifest = JSON.parse(atob(String(file.content).replace(/\s/g, '')));
     finishGithubUpdateCheck({
       status: 'ok', version_name: manifest.versionName, version_code: manifest.versionCode,
-      tag_name: manifest.tagName, apk_url: manifest.apkUrl || RAW_APK_URL,
+      tag_name: manifest.tagName, apk_url: manifest.apkUrl || LATEST_APK_URL,
       html_url: manifest.htmlUrl || RELEASES_PAGE, build_sha: manifest.buildSha, sha256: manifest.sha256
     });
   } catch (error) {

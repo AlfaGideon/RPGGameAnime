@@ -86,7 +86,7 @@ jobs:
           version_code=$((1000 + GITHUB_RUN_NUMBER))
           apk_sha256="$(sha256sum apk-output/Echo-Astra-UI-Prototype.apk | awk '{print $1}')"
           tag_name="v${VERSION_NAME}"
-          apk_url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${GITHUB_REF_NAME}/apk-output/Echo-Astra-UI-Prototype.apk"
+          apk_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${tag_name}/Echo-Astra-UI-Prototype.apk"
           release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${tag_name}"
           built_at="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           export VERSION_CODE="$version_code" APK_SHA256="$apk_sha256" TAG_NAME="$tag_name" APK_URL="$apk_url" RELEASE_URL="$release_url" BUILT_AT="$built_at"

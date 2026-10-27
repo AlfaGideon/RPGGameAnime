@@ -40,10 +40,8 @@ public final class MainActivity extends Activity {
             "https://api.github.com/repos/AlfaGideon/RPGGameAnime/releases/latest";
     private static final String RELEASES_PAGE =
             "https://github.com/AlfaGideon/RPGGameAnime/releases";
-    private static final String APK_RAW_URL =
-            "https://raw.githubusercontent.com/AlfaGideon/RPGGameAnime/arena/f45db89b-rpggameanime/apk-output/Echo-Astra-UI-Prototype.apk";
-    private static final String APK_RAW_PATH =
-            "/AlfaGideon/RPGGameAnime/arena/f45db89b-rpggameanime/apk-output/Echo-Astra-UI-Prototype.apk";
+    private static final String LATEST_APK_URL =
+            "https://github.com/AlfaGideon/RPGGameAnime/releases/latest/download/Echo-Astra-UI-Prototype.apk";
 
     private WebView webView;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -106,11 +104,8 @@ public final class MainActivity extends Activity {
         String host = uri.getHost();
         String path = uri.getPath();
         if (host == null || path == null) return false;
-        boolean isReleasePage = "github.com".equals(host)
+        return "github.com".equals(host)
                 && path.startsWith("/AlfaGideon/RPGGameAnime/releases");
-        boolean isBuildApk = "raw.githubusercontent.com".equals(host)
-                && APK_RAW_PATH.equals(path);
-        return isReleasePage || isBuildApk;
     }
 
     public final class GithubUpdatesBridge {
@@ -180,7 +175,7 @@ public final class MainActivity extends Activity {
             result.put("version_name", manifest.optString("versionName", ""));
             result.put("version_code", manifest.optLong("versionCode", 0L));
             result.put("tag_name", manifest.optString("tagName", ""));
-            result.put("apk_url", manifest.optString("apkUrl", APK_RAW_URL));
+            result.put("apk_url", manifest.optString("apkUrl", LATEST_APK_URL));
             result.put("html_url", manifest.optString("htmlUrl", RELEASES_PAGE));
             result.put("build_sha", manifest.optString("buildSha", ""));
             result.put("sha256", manifest.optString("sha256", ""));
