@@ -78,7 +78,9 @@ const BIOME_INFO = {
   forest: { name: 'Шепчущий лес', short: 'Лес', glyph: '♧' },
   highland: { name: 'Осколочные нагорья', short: 'Нагорья', glyph: '△' },
   marsh: { name: 'Сумрачные топи', short: 'Топи', glyph: '♨' },
-  frost: { name: 'Северные льды', short: 'Льды', glyph: '❄' }
+  frost: { name: 'Северные льды', short: 'Льды', glyph: '❄' },
+  mountain: { name: 'Непроходимый горный хребет', short: 'Хребет · обход', glyph: '▲' },
+  'cloud-rock': { name: 'Скальные выступы в облаках', short: 'Скалы · объезд', glyph: '◆' }
 };
 
 // The world overview is a 10 × 10 grid of 100 × 100-cell regions (1,000 × 1,000 cells total).
@@ -96,6 +98,24 @@ const worldBiomeRegions = [
   ['forest', 'forest', 'highland', 'highland', 'highland', 'forest', 'cloud', 'cloud', 'cloud', 'cloud']
 ];
 
+// Fixed, deterministic terrain features: each ridge is a solid barrier, but ends before the world edge
+// so players can walk around it. Their coordinates deliberately stay clear of starter city Lior.
+const MOUNTAIN_RANGES = [
+  { id: 'silver-ridge', name: 'Серебряный хребет', radius: 5, path: [{ x: 145, y: 205 }, { x: 250, y: 238 }, { x: 360, y: 222 }, { x: 470, y: 260 }, { x: 585, y: 232 }, { x: 700, y: 268 }, { x: 830, y: 242 }] },
+  { id: 'echo-spine', name: 'Кряж Эхо', radius: 5, path: [{ x: 225, y: 342 }, { x: 310, y: 412 }, { x: 278, y: 500 }, { x: 350, y: 570 }, { x: 330, y: 662 }] },
+  { id: 'windward-wall', name: 'Гребень Ветров', radius: 6, path: [{ x: 635, y: 326 }, { x: 700, y: 408 }, { x: 742, y: 500 }, { x: 704, y: 592 }, { x: 780, y: 690 }] },
+  { id: 'southern-spine', name: 'Южный каменный пояс', radius: 5, path: [{ x: 365, y: 742 }, { x: 480, y: 786 }, { x: 600, y: 752 }, { x: 720, y: 792 }] }
+];
+
+// A few compact rocky teeth protrude through cloud fields. Each patch is only a handful of cells.
+const CLOUD_ROCK_PATCHES = [
+  { id: 'west-spire', cells: [{ x: 42, y: 132 }, { x: 43, y: 132 }, { x: 42, y: 133 }] },
+  { id: 'mist-spire', cells: [{ x: 132, y: 468 }, { x: 133, y: 468 }, { x: 132, y: 469 }] },
+  { id: 'western-needle', cells: [{ x: 76, y: 614 }, { x: 77, y: 614 }, { x: 76, y: 615 }] },
+  { id: 'far-shelf', cells: [{ x: 882, y: 846 }, { x: 883, y: 846 }, { x: 882, y: 847 }] },
+  { id: 'eastern-spire', cells: [{ x: 946, y: 949 }, { x: 947, y: 949 }, { x: 946, y: 950 }] }
+];
+
 const pointsOfInterest = [
   { id: 'iara', name: 'Иара Кест', kind: 'npc', glyph: '👩‍🔧', x: 496, y: 496, description: 'Инженер маяков · стартовый NPC' },
   { id: 'smith', name: 'Кузница Торена Валя', kind: 'npc', glyph: '⚒', x: 495, y: 496, description: 'Ремонт и базовое снаряжение' },
@@ -106,6 +126,18 @@ const pointsOfInterest = [
   { id: 'market', name: 'Торговая площадь', kind: 'service', glyph: '▤', x: 497, y: 495, description: 'Рынок и заявки игроков' },
   { id: 'beacon', name: 'Старый сигнальный маяк', kind: 'landmark', glyph: '✧', x: 501, y: 496, description: 'Переход к лесному тракту' }
 ];
+
+const NPC_PROFILES = [
+  { id: 'iara', poiId: 'iara', name: 'Иара Кест', role: 'Инженер маяков', glyph: '✧', art: 'assets/npcs/iara-kest.png', sprite: 'assets/cutouts/npcs/iara-kest.png', mirrorArt: true, mirrorSprite: false, quote: '«Не запускай узел вслепую. Я больше не буду решать за весь город одна».', story: 'В аварийную ночь Иара удержала маяк и нашла в старом журнале цену его сигналов. Теперь она делится знаниями и ищет способ, чтобы сетью не распоряжался один человек.', service: 'Помоги проверить сигнальный узел и восстановить безопасную связь.' },
+  { id: 'vesta', name: 'Веста Ран', role: 'Представительница Дозора', glyph: '⌑', art: 'assets/npcs/vesta-ran.png', sprite: 'assets/cutouts/npcs/vesta-ran.png', quote: '«Запрет защищает только тогда, когда люди знают, от чего именно он их защищает».', story: 'Веста ограничивала доступ к маякам, пока не обнаружила скрытые отчёты о последствиях прежнего запуска. Теперь она публикует записи и помогает городу выработать общие правила.', service: 'Поговори о доступе к маякам и правилах безопасности.' },
+  { id: 'nir', name: 'Нир', role: 'Следопыт Конклава', glyph: '➶', art: 'assets/npcs/nir.png', sprite: 'assets/cutouts/npcs/nir.png', quote: '«Я не доверяю организациям. Людям — иногда. Проверим, кто из нас ошибся».', story: 'Нир пришёл за осколком маяка, но следы привели к острову, потерянному из-за сети. Он передал героям доказательства и стал осторожным союзником, не отказавшись от сомнений.', service: 'Спроси о Конклаве, осколке и исчезнувших островах.' },
+  { id: 'smith', poiId: 'smith', name: 'Торен Валь', role: 'Кузнец Лиора', glyph: '⚒', art: 'assets/npcs/toren-val.png', sprite: 'assets/cutouts/npcs/toren-val.png', quote: '«Сначала проверим металл. Маяк не место для догадок».', story: 'Торен держался за простые и безопасные изделия, пока игроки не помогли ему проверить старый чертёж. Теперь он передаёт другим городам надёжный способ чинить маяки.', service: 'Инструменты, обычное снаряжение и ремонт; покупки в прототипе отключены.' },
+  { id: 'merchant', poiId: 'merchant', name: 'Мейра Соль', role: 'Торговка Лиора', glyph: '◈', art: 'assets/npcs/meyra-sol.png', sprite: 'assets/cutouts/npcs/meyra-sol.png', quote: '«Ведомости не сходились. Я нашла, кто менял маршруты во время шторма».', story: 'Мейра заметила поддельные ведомости грузов и вместе с жителями раскрыла перенаправление поставок. Теперь она отстаивает прозрачные правила торговли и помогает новым лавкам.', service: 'Городской ассортимент и расходники показаны как демонстрационный макет.' },
+  { id: 'herbalist', poiId: 'herbalist', name: 'Элна Рут', role: 'Травница и полевая лекарка', glyph: '✿', art: 'assets/npcs/elna-rut.png', sprite: 'assets/cutouts/npcs/elna-rut.png', quote: '«Эти травы облегчают боль, но не возвращают воспоминания. Я не стану обещать невозможное».', story: 'После аварии Элна изучала растения у Эхо и нашла безопасные лечебные сборы. Она поделилась рецептами с жителями, честно объясняя, что утраченная память пока не возвращается.', service: 'Безопасные базовые лечебные средства и советы; магазин не продаёт предметы.' },
+  { id: 'kora', name: 'Кора Вей', role: 'Смотритель городского устава', glyph: '☷', art: 'assets/npcs/kora-vei.png', sprite: 'assets/cutouts/npcs/kora-vei.png', mirrorArt: true, mirrorSprite: false, quote: '«Город принадлежит людям, а не тому, кто первым запер склад».', story: 'Кора регистрирует общинные проекты. Она помнит поселение, погибшее из-за монополии на склады, и помогает Лиору закрепить устав с общими правами и ответственностью.', service: 'Расскажи, как устроены городские правила и регистрация поселений.' }
+];
+
+const getNpcProfile = id => NPC_PROFILES.find(profile => profile.id === id || profile.poiId === id);
 
 function isInsideLior(x, y) {
   return x >= LIOR_CITY.xMin && x <= LIOR_CITY.xMax && y >= LIOR_CITY.yMin && y <= LIOR_CITY.yMax;
@@ -140,7 +172,82 @@ function getBiomeId(x, y) {
   return baseBiome;
 }
 
+function distanceToSegment(x, y, start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const lengthSquared = dx * dx + dy * dy;
+  if (!lengthSquared) return Math.hypot(x - start.x, y - start.y);
+  const t = Math.max(0, Math.min(1, ((x - start.x) * dx + (y - start.y) * dy) / lengthSquared));
+  return Math.hypot(x - (start.x + t * dx), y - (start.y + t * dy));
+}
+
+function getMountainRangeAt(x, y) {
+  x = Number(x); y = Number(y);
+  if (!Number.isFinite(x) || !Number.isFinite(y) || isInsideLior(x, y)) return null;
+  for (const range of MOUNTAIN_RANGES) {
+    for (let index = 0; index < range.path.length - 1; index += 1) {
+      if (distanceToSegment(x, y, range.path[index], range.path[index + 1]) <= range.radius) return range;
+    }
+  }
+  return null;
+}
+
+function getCloudRockAt(x, y) {
+  x = Number(x); y = Number(y);
+  if (!Number.isInteger(x) || !Number.isInteger(y) || getBiomeId(x, y) !== 'cloud') return null;
+  return CLOUD_ROCK_PATCHES.find(patch => patch.cells.some(cell => cell.x === x && cell.y === y)) || null;
+}
+
+function getTerrainFeatureAt(x, y) {
+  const range = getMountainRangeAt(x, y);
+  if (range) return { id: 'mountain', name: range.name, glyph: BIOME_INFO.mountain.glyph, alwaysBlocked: true, rangeId: range.id };
+  const rock = getCloudRockAt(x, y);
+  if (rock) return { id: 'cloud-rock', name: `Скальный выступ «${rock.id}»`, glyph: BIOME_INFO['cloud-rock'].glyph, alwaysBlocked: true, rockId: rock.id };
+  return null;
+}
+
+function segmentIntersectsBounds(start, end, minX, minY, maxX, maxY) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  let low = 0;
+  let high = 1;
+  const p = [-dx, dx, -dy, dy];
+  const q = [start.x - minX, maxX - start.x, start.y - minY, maxY - start.y];
+  for (let index = 0; index < 4; index += 1) {
+    if (p[index] === 0) {
+      if (q[index] < 0) return false;
+      continue;
+    }
+    const ratio = q[index] / p[index];
+    if (p[index] < 0) low = Math.max(low, ratio);
+    else high = Math.min(high, ratio);
+    if (low > high) return false;
+  }
+  return true;
+}
+
+function getTerrainFeatureInBounds(minX, minY, maxX, maxY) {
+  for (const range of MOUNTAIN_RANGES) {
+    for (let index = 0; index < range.path.length - 1; index += 1) {
+      if (segmentIntersectsBounds(range.path[index], range.path[index + 1], minX - range.radius, minY - range.radius, maxX + range.radius, maxY + range.radius)) {
+        return { id: 'mountain', name: range.name, glyph: BIOME_INFO.mountain.glyph, alwaysBlocked: true, rangeId: range.id };
+      }
+    }
+  }
+  for (const patch of CLOUD_ROCK_PATCHES) {
+    if (patch.cells.some(cell => cell.x >= minX && cell.x <= maxX && cell.y >= minY && cell.y <= maxY)) {
+      return { id: 'cloud-rock', name: `Скальный выступ «${patch.id}»`, glyph: BIOME_INFO['cloud-rock'].glyph, alwaysBlocked: true, rockId: patch.id };
+    }
+  }
+  return null;
+}
+
 const isCloudBlocked = (x, y, hasTransport = false) => getBiomeId(x, y) === 'cloud' && !hasTransport;
+function isTerrainBlocked(x, y, hasTransport = false) {
+  const feature = getTerrainFeatureAt(x, y);
+  if (feature && feature.alwaysBlocked) return true;
+  return isCloudBlocked(x, y, hasTransport);
+}
 const clampMapCoordinate = value => Math.max(1, Math.min(MAP_CONFIG.width, Math.round(Number(value) || 1)));
 
 function getLegacyMapPosition(point) {
@@ -149,7 +256,7 @@ function getLegacyMapPosition(point) {
   if (!Number.isInteger(x) || !Number.isInteger(y) || x < 1 || x > 100 || y < 1 || y > 100) return { ...LIOR_CITY.start };
   if (x >= 7 && x <= 14 && y >= 47 && y <= 53) return { ...LIOR_CITY.start };
   const migrated = { x: clampMapCoordinate(x * 10), y: clampMapCoordinate(y * 10) };
-  return isCloudBlocked(migrated.x, migrated.y) ? { ...LIOR_CITY.start } : migrated;
+  return isTerrainBlocked(migrated.x, migrated.y) ? { ...LIOR_CITY.start } : migrated;
 }
 
 const GAME_CLOCK_STORAGE_KEY = 'echo-astra.game-clock-anchor';
@@ -227,7 +334,7 @@ function readWorldProgress() {
     }
     if (!validCell(saved.position)) return fallback;
     const position = { x: Number(saved.position.x), y: Number(saved.position.y) };
-    if (isCloudBlocked(position.x, position.y)) return fallback;
+    if (isTerrainBlocked(position.x, position.y)) return fallback;
     const savedTravel = saved.travel;
     if (!savedTravel || !validCell(savedTravel.from) || !validCell(savedTravel.to)) return { position, travel: null };
     const startedAt = Number(savedTravel.startedAt);
@@ -236,7 +343,7 @@ function readWorldProgress() {
     if (!Number.isFinite(startedAt) || !Number.isFinite(endsAt) || !Number.isFinite(durationMs) || durationMs <= 0) return { position, travel: null };
     const from = { x: Number(savedTravel.from.x), y: Number(savedTravel.from.y) };
     const to = { x: Number(savedTravel.to.x), y: Number(savedTravel.to.y) };
-    if (isCloudBlocked(from.x, from.y) || isCloudBlocked(to.x, to.y)) return { position, travel: null };
+    if (isTerrainBlocked(from.x, from.y) || isTerrainBlocked(to.x, to.y)) return { position, travel: null };
     if (endsAt <= Date.now()) return { position: to, travel: null };
     const fromBiome = getBiomeId(from.x, from.y);
     const toBiome = getBiomeId(to.x, to.y);
@@ -459,20 +566,25 @@ function renderMap() {
       const current = columnX === x && rowY === y;
       const distance = Math.abs(columnX - x) + Math.abs(rowY - y);
       const biomeId = getBiomeId(columnX, rowY);
+      const feature = getTerrainFeatureAt(columnX, rowY);
+      const terrainId = feature ? feature.id : biomeId;
       const poi = getPoiAt(columnX, rowY);
       const target = state.travel && state.travel.to.x === columnX && state.travel.to.y === rowY;
-      const cloudBlocked = !state.travel && distance === 1 && isCloudBlocked(columnX, rowY, state.hasCloudTransport);
-      const canMove = !state.travel && distance === 1 && !cloudBlocked;
+      const terrainBlocked = !state.travel && distance === 1 && isTerrainBlocked(columnX, rowY, state.hasCloudTransport);
+      const canMove = !state.travel && distance === 1 && !terrainBlocked;
+      const blockReason = feature && feature.id === 'mountain' ? 'mountain' : feature && feature.id === 'cloud-rock' ? 'rock' : 'cloud';
+      const blockHint = blockReason === 'mountain' ? ' · хребет нельзя пересечь даже на транспорте' : blockReason === 'rock' ? ' · скала всегда непроходима' : ' · пешком нельзя, нужен транспорт';
       const attrs = current && poi
         ? `data-action="interact-current" data-poi-id="${poi.id}"`
-        : cloudBlocked
-          ? 'data-cloud-blocked'
+        : terrainBlocked
+          ? `data-terrain-blocked data-block-reason="${blockReason}"`
           : canMove
             ? `data-map-move data-map-x="${columnX}" data-map-y="${rowY}"`
             : 'disabled';
-      const tileLabel = `Клетка ${formatCell(columnX, rowY)} · ${BIOME_INFO[biomeId].name}${poi ? ` · ${poi.name}` : ''}${current ? ' · вы здесь' : ''}${cloudBlocked ? ' · пешком нельзя, нужен транспорт' : ''}`;
-      const marker = current ? '<span class="you-marker">●</span>' : poi ? `<span class="poi-marker">${poi.glyph}</span>` : `<span class="biome-marker">${BIOME_INFO[biomeId].glyph}</span>`;
-      tiles.push(`<button type="button" class="world-tile biome-${biomeId}${current ? ' current-tile' : ''}${poi ? ' poi-tile' : ''}${target ? ' travel-target' : ''}${canMove ? ' reachable-tile' : ''}${cloudBlocked ? ' cloud-locked' : ''}" ${attrs} aria-label="${esc(tileLabel)}" title="${esc(tileLabel)}">${marker}</button>`);
+      const tileName = feature ? feature.name : BIOME_INFO[biomeId].name;
+      const tileLabel = `Клетка ${formatCell(columnX, rowY)} · ${tileName}${poi ? ` · ${poi.name}` : ''}${current ? ' · вы здесь' : ''}${terrainBlocked ? blockHint : ''}`;
+      const marker = current ? '<span class="you-marker">●</span>' : poi ? `<span class="poi-marker">${poi.glyph}</span>` : `<span class="biome-marker">${feature ? feature.glyph : BIOME_INFO[biomeId].glyph}</span>`;
+      tiles.push(`<button type="button" class="world-tile biome-${terrainId}${feature ? ' terrain-feature' : ''}${current ? ' current-tile' : ''}${poi ? ' poi-tile' : ''}${target ? ' travel-target' : ''}${canMove ? ' reachable-tile' : ''}${terrainBlocked ? ' terrain-locked' : ''}" ${attrs} aria-label="${esc(tileLabel)}" title="${esc(tileLabel)}">${marker}</button>`);
     }
   }
 
@@ -483,20 +595,32 @@ function renderMap() {
   const currentPatchX = Math.floor(((x - 1) % MAP_CONFIG.worldRegionSize) / MAP_CONFIG.biomeSize);
   const currentPatchY = Math.floor(((y - 1) % MAP_CONFIG.worldRegionSize) / MAP_CONFIG.biomeSize);
   const biomeTiles = Array.from({ length: 10 }, (_, patchY) => Array.from({ length: 10 }, (_, patchX) => {
-    const sampleX = regionStartX + patchX * MAP_CONFIG.biomeSize + 4;
-    const sampleY = regionStartY + patchY * MAP_CONFIG.biomeSize + 4;
-    const biomeId = getBiomeId(sampleX, sampleY);
+    const patchMinX = regionStartX + patchX * MAP_CONFIG.biomeSize;
+    const patchMinY = regionStartY + patchY * MAP_CONFIG.biomeSize;
+    const patchMaxX = patchMinX + MAP_CONFIG.biomeSize - 1;
+    const patchMaxY = patchMinY + MAP_CONFIG.biomeSize - 1;
+    const sampleX = patchMinX + 4;
+    const sampleY = patchMinY + 4;
+    const baseBiomeId = getBiomeId(sampleX, sampleY);
+    const feature = getTerrainFeatureInBounds(patchMinX, patchMinY, patchMaxX, patchMaxY);
+    const terrainId = feature ? feature.id : baseBiomeId;
     const currentPatch = patchX === currentPatchX && patchY === currentPatchY;
-    const name = `${BIOME_INFO[biomeId].name} · участок ${patchX + 1}:${patchY + 1} · 10 × 10 клеток`;
-    return `<span class="sector-tile biome-${biomeId}${currentPatch ? ' active-sector' : ''}" title="${esc(name)}" aria-label="${esc(name)}">${currentPatch ? '●' : biomeId === 'city' ? '⌂' : ''}</span>`;
+    const name = `${feature ? feature.name : BIOME_INFO[baseBiomeId].name} · участок ${patchX + 1}:${patchY + 1} · 10 × 10 клеток`;
+    const marker = feature ? feature.glyph : currentPatch ? '●' : baseBiomeId === 'city' ? '⌂' : '';
+    return `<span class="sector-tile biome-${terrainId}${feature ? ' terrain-feature' : ''}${currentPatch ? ' active-sector' : ''}" title="${esc(name)}" aria-label="${esc(name)}">${marker}</span>`;
   }).join('')).join('');
 
   const worldTiles = worldBiomeRegions.map((row, rowIndex) => row.map((biomeId, columnIndex) => {
     const currentRegion = columnIndex === worldRegionX && rowIndex === worldRegionY;
+    const regionMinX = columnIndex * MAP_CONFIG.worldRegionSize + 1;
+    const regionMinY = rowIndex * MAP_CONFIG.worldRegionSize + 1;
+    const feature = getTerrainFeatureInBounds(regionMinX, regionMinY, regionMinX + MAP_CONFIG.worldRegionSize - 1, regionMinY + MAP_CONFIG.worldRegionSize - 1);
+    const terrainId = feature ? feature.id : biomeId;
     const cityRegion = Math.floor((LIOR_CITY.start.x - 1) / MAP_CONFIG.worldRegionSize) === columnIndex
       && Math.floor((LIOR_CITY.start.y - 1) / MAP_CONFIG.worldRegionSize) === rowIndex;
-    const name = `${BIOME_INFO[biomeId].name} · область ${columnIndex + 1}:${rowIndex + 1} · 100 × 100 клеток${cityRegion ? ' · здесь Лиор' : ''}`;
-    return `<span class="sector-tile world-region-tile biome-${biomeId}${currentRegion ? ' active-sector' : ''}${cityRegion ? ' city-region' : ''}" title="${esc(name)}" aria-label="${esc(name)}">${cityRegion ? '⌂' : currentRegion ? '●' : ''}</span>`;
+    const name = `${feature ? feature.name : BIOME_INFO[biomeId].name} · область ${columnIndex + 1}:${rowIndex + 1} · 100 × 100 клеток${cityRegion ? ' · здесь Лиор' : ''}`;
+    const marker = cityRegion ? '⌂' : feature ? feature.glyph : currentRegion ? '●' : '';
+    return `<span class="sector-tile world-region-tile biome-${terrainId}${feature ? ' terrain-feature' : ''}${currentRegion ? ' active-sector' : ''}${cityRegion ? ' city-region' : ''}" title="${esc(name)}" aria-label="${esc(name)}">${marker}</span>`;
   }).join('')).join('');
 
   const nearbyPoints = pointsOfInterest
@@ -519,7 +643,7 @@ function renderMap() {
     <section class="card map-view-card">
       <div class="map-view-heading"><div><strong>Обычный биом · 10 × 10 клеток</strong><span>Каждый квадрат — клетка; шаг только к соседней клетке</span></div><span class="map-scale">${formatCell(minX, minY)}—${formatCell(maxX, maxY)}</span></div>
       <div class="world-map-grid" role="group" aria-label="Локальная карта 10 на 10 клеток">${tiles.join('')}</div>
-      <div class="map-direction-hint"><span class="direction-dot"></span>Облака белые и непроходимы пешком: для них нужен транспорт.</div>
+      <div class="map-direction-hint"><span class="direction-dot"></span>Белые облака требуют транспорта; хребты и скальные выступы нельзя пересечь — их обходят.</div>
     </section>
     <div class="map-legend card-flat">
       ${Object.entries(BIOME_INFO).map(([id, biome]) => `<span><i class="legend-swatch biome-${id}"></i>${biome.short}</span>`).join('')}
@@ -602,15 +726,17 @@ function renderProfessionChoice() {
 function renderHome() {
   const c = cls();
   const p = prof();
+  const inLior = isInsideLior(state.position.x, state.position.y);
+  const currentBiomeName = BIOME_INFO[getBiomeId(state.position.x, state.position.y)].name;
   screenEl.innerHTML = `
     <div class="player-strip">
       <div class="player-identity">${avatarButtonMarkup('player-portrait', true)}<div style="min-width:0"><div class="player-name">${esc(state.characterName || 'Астра')} · Уровень 1</div><div class="player-subtitle">${c.name} <span class="muted">·</span> ${p.name}</div></div></div>
       <div class="currency-pill">✧ 100</div>
     </div>
     <div class="home-location-card card-flat"><span class="home-location-icon">⌖</span><div><strong>${isInsideLior(state.position.x, state.position.y) ? 'Лиор · стартовый город' : BIOME_INFO[getBiomeId(state.position.x, state.position.y)].name}</strong><small>Клетка ${formatCell(state.position.x, state.position.y)}</small></div><button class="text-action" data-nav="map">Карта →</button></div>
-    <section class="hero-art">
-      <div class="hero-content"><div class="hero-top"><div><div class="hero-location">первая безопасная гавань</div><h2>Лиор</h2><p>Порт над облаками</p></div><span class="badge badge-gold">☀ ясное утро</span></div></div>
-      <div class="hero-bottom"><button class="chip" data-action="visit-poi" data-poi-id="iara">👩‍🔧 Иара · ${formatCell(getPoi('iara').x, getPoi('iara').y)}</button><button class="chip" data-action="visit-poi" data-poi-id="smith">⚒ Кузница</button><button class="chip" data-action="visit-poi" data-poi-id="quest-board">✦ Доска заданий</button></div>
+    <section class="hero-art ${inLior ? 'hero-art--lior' : ''}">
+      <div class="hero-content"><div class="hero-top"><div><div class="hero-location">${inLior ? 'первая безопасная гавань' : 'текущее место'}</div><h2>${inLior ? 'Лиор' : esc(currentBiomeName)}</h2><p>${inLior ? 'Порт над облаками' : `Клетка ${formatCell(state.position.x, state.position.y)}`}</p></div>${inLior ? '<span class="badge badge-gold">☀ ясное утро</span>' : ''}</div></div>
+      ${inLior ? '<div class="hero-bottom"><button class="chip" data-action="visit-poi" data-poi-id="iara">✧ Иара · маяк</button><button class="chip" data-action="visit-poi" data-poi-id="smith">⚒ Кузница</button><button class="chip" data-action="visit-poi" data-poi-id="quest-board">✦ Доска заданий</button></div>' : ''}
     </section>
     <div class="section-head"><h2>Твой путь</h2><button data-nav="quests">Все задания</button></div>
     <section class="card quest-card">
@@ -951,11 +1077,13 @@ function renderCity() {
     <div class="page-title-row"><div><div class="eyebrow">городские службы</div><h1>${isLior ? 'Лиор' : 'Новое поселение'}</h1><p>${isLior ? 'Стартовый город с постоянными NPC-службами.' : 'Город, который строят и обслуживают игроки.'}</p></div><span class="badge ${isLior?'badge-gold':'badge-teal'}">${isLior?'NPC':'ИГРОКИ'}</span></div>
     <div class="segmented"><button class="${isLior?'active':''}" data-city-mode="lior">Лиор</button><button class="${!isLior?'active':''}" data-city-mode="player">Город игроков</button></div>
     ${isLior ? `
-      <div class="hero-art" style="min-height:140px;margin-bottom:14px"><div class="hero-content"><div class="hero-location">стартовая гавань</div><h2>Лиор</h2><p>У каждой службы — собственная клетка на карте.</p></div></div>
+      <div class="hero-art hero-art--lior" style="min-height:140px;margin-bottom:14px"><div class="hero-content"><div class="hero-location">стартовая гавань</div><h2>Лиор</h2><p>У каждой службы — собственная клетка на карте.</p></div></div>
       <div class="section-head"><h2>NPC-службы</h2><button data-nav="map">Открыть карту →</button></div>
       <div class="list-stack">
-        ${[['smith','⚒','Кузница Торена Валя','Обычные инструменты, снаряжение и ремонт.'],['merchant','◈','Лавка Мейры Соль','Базовые расходники и городской ассортимент.'],['herbalist','✿','Травница Элна Рут','Простые лечебные средства и советы.']].map(([id,glyph,name,description])=>{const point=getPoi(id);return `<button class="card list-card location-service-card" data-action="visit-poi" data-poi-id="${id}"><div class="list-icon">${glyph}</div><div class="list-copy"><strong>${name}</strong><span>${description}</span><small>Клетка ${formatCell(point.x,point.y)} · ${isAtPoi(point)?'ты здесь':'требуется подойти'}</small></div><span class="badge ${isAtPoi(point)?'badge-teal':'badge-gold'}">${isAtPoi(point)?'Войти':'На карте'}</span></button>`;}).join('')}
+        ${[['smith','⚒','Кузница Торена Валя','Обычные инструменты, снаряжение и ремонт.'],['merchant','◈','Лавка Мейры Соль','Базовые расходники и городской ассортимент.'],['herbalist','✿','Травница Элна Рут','Простые лечебные средства и советы.']].map(([id,glyph,name,description])=>{const point=getPoi(id);const npc=getNpcProfile(id);return `<button class="card list-card location-service-card" data-action="visit-poi" data-poi-id="${id}"><img class="service-npc-art${npc && npc.mirrorArt ? ' is-mirrored' : ''}" src="${npc ? npc.art : ''}" alt="" loading="lazy"><div class="list-copy"><strong>${name}</strong><span>${description}</span><small>Клетка ${formatCell(point.x,point.y)} · ${isAtPoi(point)?'ты здесь':'требуется подойти'}</small></div><span class="badge ${isAtPoi(point)?'badge-teal':'badge-gold'}">${isAtPoi(point)?'Войти':'На карте'}</span></button>`;}).join('')}
       </div>
+      <div class="section-head"><h2>Истории жителей</h2><span class="badge">7 персонажей</span></div>
+      <div class="npc-story-grid">${NPC_PROFILES.map(npc => `<button class="card npc-story-card" data-action="npc-profile" data-npc-id="${npc.id}"><img class="npc-story-art${npc.mirrorArt ? ' is-mirrored' : ''}" src="${npc.art}" alt="" loading="lazy"><span class="npc-story-copy"><strong>${esc(npc.name)}</strong><small>${esc(npc.role)}</small><span>${esc(npc.story)}</span></span></button>`).join('')}</div>
       <div class="section-head"><h2>Городские службы</h2></div><div class="action-row"><button class="card action-tile" data-action="open-quests"><span class="tile-icon">✦</span><strong>Задания</strong><span>Доска Лиора</span></button><button class="card action-tile" data-action="open-social"><span class="tile-icon">⌘</span><strong>Группа</strong><span>Найти помощь</span></button><button class="card action-tile" data-action="open-market"><span class="tile-icon">◈</span><strong>Рынок</strong><span>Товары города</span></button></div>` : `
       <div class="card card-pad"><div class="city-status"><div class="guild-emblem">⌂</div><div class="city-progress"><strong>Гильдия «Крылья Эйры»</strong><div class="small muted" style="margin-top:4px">Основано 5 игроками · совет 2/3</div></div><span class="badge badge-teal">Ранг 1</span></div><div class="guild-location-row"><span class="small muted">Здание на карте · ${formatCell(getPoi('guild').x,getPoi('guild').y)}</span><button class="text-action" data-action="visit-poi" data-poi-id="guild">К гильдии →</button></div></div>
       <div class="section-head"><h2>Постройки</h2><button data-action="building-wizard">+ Проект</button></div>
@@ -975,6 +1103,7 @@ function renderSocial() {
   screenEl.innerHTML = `
     <div class="page-title-row"><div><div class="eyebrow">игроки рядом</div><h1>Связь</h1><p>Группа, гильдия и совместные поручения.</p></div><span class="badge badge-teal">3 онлайн</span></div>
     <div class="card social-header"><div class="guild-emblem">⌘</div><div><strong>Гильдия «Крылья Эйры»</strong><div class="small muted" style="margin-top:4px">12 участников · город Лиор</div></div><button class="text-action" data-action="visit-poi" data-poi-id="guild">К гильдии →</button></div>
+    <div class="card player-meeting-card"><div><strong>Сцена встречи игроков</strong><span>Посетитель слева · хозяин справа · зеркальное направление по роли.</span></div><button class="btn btn-secondary btn-small" data-action="show-player-meeting">Показать демо</button></div>
     <div class="section-head"><h2>Запросы на помощь</h2><button data-action="create-order">Создать</button></div>
     <div class="list-stack">
       <div class="card card-pad"><div class="quest-meta"><span class="badge badge-gold profession-badge-inline">${professionIconMarkup('blacksmith')}ПРОФЕССИЯ: КУЗНЕЦ</span><span class="badge badge-rose">Нужен Рудокоп</span></div><h3>Материал для маяка</h3><p class="small">Нужна руда для детали сигнального узла.</p><button class="btn btn-primary btn-small" data-action="help-order">Откликнуться</button></div>
@@ -1048,11 +1177,66 @@ function showToast(message) {
 }
 
 function openModal(title, body, primary = 'Понятно') {
+  modalCard.classList.remove('dialogue-modal-card');
   modalCard.innerHTML = `<div class="eyebrow">демонстрационный макет</div><h2>${title}</h2><p>${body}</p><div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">${primary}</button></div>`;
   modalBackdrop.hidden = false;
 }
 
-function closeModal() { modalBackdrop.hidden = true; state.modalChoice = null; }
+function dialogueActorMarkup(participant, side) {
+  const isRight = side === 'right';
+  const mirror = Boolean(participant.mirrorSource) !== isRight;
+  const sprite = participant.sprite || `assets/cutouts/classes/${participant.classId}.png`;
+  return `<div class="dialogue-actor dialogue-actor--${side}">
+    <img class="dialogue-sprite${mirror ? ' is-mirrored' : ''}" src="${esc(sprite)}" alt="${esc(participant.name)}" loading="eager">
+    <span class="dialogue-nameplate">${esc(participant.name)}</span>
+  </div>`;
+}
+
+function renderDialogueScene({ left, right, location = 'Лиор · городская площадь' }) {
+  return `<div class="dialogue-scene" role="img" aria-label="Сцена встречи: ${esc(left.name)} и ${esc(right.name)}">
+    <div class="dialogue-scene-backdrop"></div>
+    <div class="dialogue-scene-ground" aria-hidden="true"></div>
+    ${dialogueActorMarkup(left, 'left')}
+    ${dialogueActorMarkup(right, 'right')}
+    <span class="dialogue-location-tag">${esc(location)}</span>
+  </div>`;
+}
+
+function openNpcDialogue(npcId) {
+  const profile = getNpcProfile(npcId);
+  if (!profile) return;
+  const point = profile.poiId ? getPoi(profile.poiId) : null;
+  const playerName = state.characterName || 'Астра';
+  const scene = renderDialogueScene({
+    left: { name: profile.name, sprite: profile.sprite, mirrorSource: Boolean(profile.mirrorSprite) },
+    right: { name: playerName, classId: cls().id },
+    location: point ? `Лиор · ${formatCell(point.x, point.y)}` : 'Лиор · сюжетная встреча'
+  });
+  modalCard.classList.add('dialogue-modal-card');
+  modalCard.innerHTML = `${scene}
+    <div class="dialogue-copy"><span class="eyebrow">${esc(profile.role)}</span><h2>${esc(profile.name)}</h2>
+      <p class="dialogue-line">${esc(profile.quote)}</p>
+      <div class="dialogue-story"><strong>Краткая история</strong><p>${esc(profile.story)}</p></div>
+      <div class="dialogue-service-note">${esc(profile.service)}</div>
+      <div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">Продолжить</button></div>
+    </div>`;
+  modalBackdrop.hidden = false;
+}
+
+function openPlayerMeetingDemo() {
+  const scene = renderDialogueScene({
+    left: { name: `${state.characterName || 'Астра'} · посетитель`, classId: cls().id },
+    right: { name: 'Ливен · хозяин лавки', classId: 'guardian' },
+    location: 'Лиор · встреча игроков'
+  });
+  modalCard.classList.add('dialogue-modal-card');
+  modalCard.innerHTML = `${scene}<div class="dialogue-copy"><span class="eyebrow">демо встречи игроков</span><h2>Посетитель и хозяин лавки</h2>
+    <p class="dialogue-line">Посетитель всегда слева и смотрит вправо; хозяин или продавец — справа и зеркально развёрнут влево. Эта сцена локальная: сетевой игры в прототипе нет.</p>
+    <div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">Понятно</button></div></div>`;
+  modalBackdrop.hidden = false;
+}
+
+function closeModal() { modalBackdrop.hidden = true; modalCard.classList.remove('dialogue-modal-card'); state.modalChoice = null; }
 
 function go(screen) {
   state.screen = screen;
@@ -1067,7 +1251,15 @@ function beginMapTravel(targetX, targetY) {
   if (!Number.isInteger(targetX) || !Number.isInteger(targetY) || targetX < 1 || targetX > MAP_CONFIG.width || targetY < 1 || targetY > MAP_CONFIG.height) return;
   const distance = Math.abs(targetX - state.position.x) + Math.abs(targetY - state.position.y);
   if (distance !== 1) { showToast('За один шаг можно перейти только на соседнюю клетку'); return; }
-  if (isCloudBlocked(targetX, targetY, state.hasCloudTransport)) { showToast('Белые облака непроходимы пешком — нужен транспорт'); return; }
+  if (isTerrainBlocked(targetX, targetY, state.hasCloudTransport)) {
+    const feature = getTerrainFeatureAt(targetX, targetY);
+    showToast(feature && feature.id === 'mountain'
+      ? `${feature.name} непроходим даже с транспортом — обойди хребет`
+      : feature && feature.id === 'cloud-rock'
+        ? 'Скальный выступ непроходим даже с транспортом — обойди его'
+        : 'Белые облака непроходимы пешком — нужен транспорт');
+    return;
+  }
 
   const fromBiome = getBiomeId(state.position.x, state.position.y);
   const toBiome = getBiomeId(targetX, targetY);
@@ -1127,10 +1319,10 @@ function visitPoi(id) {
     return;
   }
   switch (point.id) {
-    case 'iara': openModal(`Иара Кест · клетка ${formatCell(point.x, point.y)}`, '«Помоги мне проверить сигнальный узел. Ты пришёл в правильную точку Лиора — взаимодействие доступно только здесь.»'); break;
-    case 'smith': openModal(`Кузница Торена Валя · клетка ${formatCell(point.x, point.y)}`, 'Простая кирка — 20 м · рабочий молот — 20 м · короткий меч — 35 м · ремонт — 10 м. Покупки здесь не совершаются.'); break;
-    case 'merchant': openModal(`Лавка Мейры Соль · клетка ${formatCell(point.x, point.y)}`, 'Макет базового городского ассортимента. Торговые операции отключены.'); break;
-    case 'herbalist': openModal(`Элна Рут · клетка ${formatCell(point.x, point.y)}`, 'Базовые лечебные средства и травы. В этом макете магазин не продаёт предметы.'); break;
+    case 'iara': openNpcDialogue('iara'); break;
+    case 'smith': openNpcDialogue('smith'); break;
+    case 'merchant': openNpcDialogue('merchant'); break;
+    case 'herbalist': openNpcDialogue('herbalist'); break;
     case 'guild': openModal(`Гильдия «Крылья Эйры» · клетка ${formatCell(point.x, point.y)}`, 'Ты вошёл в здание гильдии. Здесь будут состав, казна, городской совет и права участников.'); break;
     case 'quest-board': go('quests'); showToast(`Доска заданий Лиора · клетка ${formatCell(point.x, point.y)}`); break;
     case 'market': go('market'); showToast(`Торговая площадь · клетка ${formatCell(point.x, point.y)}`); break;
@@ -1176,8 +1368,16 @@ document.addEventListener('click', (event) => {
   const nav = event.target.closest('[data-nav]');
   if (nav) { state.screen = nav.dataset.nav; render(); window.scrollTo(0, 0); return; }
 
-  const cloudBlocked = event.target.closest('[data-cloud-blocked]');
-  if (cloudBlocked) { showToast('Белые облака непроходимы пешком — нужен транспорт'); return; }
+  const terrainBlocked = event.target.closest('[data-terrain-blocked]');
+  if (terrainBlocked) {
+    const reason = terrainBlocked.dataset.blockReason;
+    showToast(reason === 'mountain'
+      ? 'Горный хребет непроходим даже с транспортом — найди обход'
+      : reason === 'rock'
+        ? 'Скальный выступ всегда непроходим — обойди его'
+        : 'Белые облака непроходимы пешком — нужен транспорт');
+    return;
+  }
 
   const mapMove = event.target.closest('[data-map-move]');
   if (mapMove) { beginMapTravel(Number(mapMove.dataset.mapX), Number(mapMove.dataset.mapY)); return; }
@@ -1245,6 +1445,8 @@ document.addEventListener('click', (event) => {
     case 'open-character': go('character'); break;
     case 'open-city': go('city'); break;
     case 'open-social': go('social'); break;
+    case 'show-player-meeting': openPlayerMeetingDemo(); break;
+    case 'npc-profile': openNpcDialogue(actionButton.dataset.npcId); break;
     case 'open-market': go('market'); break;
     case 'open-combat': go('combat'); break;
     case 'open-combat-path': go('combat'); break;

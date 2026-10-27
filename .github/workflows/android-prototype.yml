@@ -61,7 +61,13 @@ jobs:
           unzip -l "$apk" | grep -q 'assets/assets/echo-astra-logo.png'
           for class_art in guardian duelist ranger arcanist warden; do
             unzip -l "$apk" | grep -q "assets/assets/classes/$class_art.png"
+            unzip -l "$apk" | grep -q "assets/assets/cutouts/classes/$class_art.png"
           done
+          for npc in iara-kest vesta-ran nir toren-val meyra-sol elna-rut kora-vei; do
+            unzip -l "$apk" | grep -q "assets/assets/npcs/$npc.png"
+            unzip -l "$apk" | grep -q "assets/assets/cutouts/npcs/$npc.png"
+          done
+          unzip -l "$apk" | grep -q 'assets/assets/locations/lior-city.png'
           for profession in blacksmith farmer herbalist miner carpenter tanner builder; do
             unzip -l "$apk" | grep -q "assets/assets/icons/profession-$profession.svg"
           done
