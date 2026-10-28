@@ -1366,7 +1366,7 @@ function renderSocial() {
       <div class="communication-composer-footer"><span>Enter — отправить · Shift+Enter — новая строка</span><span id="communication-char-count">0/500</span></div>
     </section>
     <div class="communication-demo-note"><span>ⓘ</span><span>${demoNote}</span></div>
-    ${sectionId === 'guild' ? '<div class="player-meeting-card card"><div><strong>Встреча в мире</strong><span>Посетитель слева · хозяин справа · направление зависит от роли.</span></div><button class="btn btn-secondary btn-small" data-action="show-player-meeting">Демо</button></div>' : ''}`;
+    ${sectionId === 'guild' ? '<div class="player-meeting-card card"><div><strong>Встреча в мире</strong><span>Посетитель справа · хозяин слева.</span></div><button class="btn btn-secondary btn-small" data-action="show-player-meeting">Демо</button></div>' : ''}`;
 }
 
 const marketItems = [
@@ -1536,12 +1536,12 @@ function dialogueActorMarkup(participant, side) {
   </div>`;
 }
 
-function renderDialogueScene({ left, right, location = 'Лиор · городская площадь' }) {
-  return `<div class="dialogue-scene" role="img" aria-label="Сцена встречи: ${esc(left.name)} и ${esc(right.name)}">
+function renderDialogueScene({ visitor, host, location = 'Лиор · городская площадь' }) {
+  return `<div class="dialogue-scene" role="img" aria-label="Сцена встречи: хозяин ${esc(host.name)} и посетитель ${esc(visitor.name)}">
     <div class="dialogue-scene-backdrop"></div>
     <div class="dialogue-scene-ground" aria-hidden="true"></div>
-    ${dialogueActorMarkup(left, 'left')}
-    ${dialogueActorMarkup(right, 'right')}
+    ${dialogueActorMarkup(host, 'left')}
+    ${dialogueActorMarkup(visitor, 'right')}
     <span class="dialogue-location-tag">${esc(location)}</span>
   </div>`;
 }
@@ -1552,8 +1552,8 @@ function openNpcDialogue(npcId) {
   const point = profile.poiId ? getPoi(profile.poiId) : null;
   const playerName = state.characterName || 'Астра';
   const scene = renderDialogueScene({
-    left: { name: profile.name, sprite: profile.sprite, mirrorSource: Boolean(profile.mirrorSprite) },
-    right: { name: playerName, classId: cls().id },
+    host: { name: profile.name, sprite: profile.sprite, mirrorSource: Boolean(profile.mirrorSprite) },
+    visitor: { name: playerName, classId: cls().id },
     location: point ? `Лиор · ${formatCell(point.x, point.y)}` : 'Лиор · сюжетная встреча'
   });
   modalCard.classList.add('dialogue-modal-card');
@@ -1569,13 +1569,13 @@ function openNpcDialogue(npcId) {
 
 function openPlayerMeetingDemo() {
   const scene = renderDialogueScene({
-    left: { name: `${state.characterName || 'Астра'} · посетитель`, classId: cls().id },
-    right: { name: 'Ливен · хозяин лавки', classId: 'guardian' },
+    visitor: { name: `${state.characterName || 'Астра'} · посетитель`, classId: cls().id },
+    host: { name: 'Ливен · хозяин лавки', classId: 'guardian' },
     location: 'Лиор · встреча игроков'
   });
   modalCard.classList.add('dialogue-modal-card');
   modalCard.innerHTML = `${scene}<div class="dialogue-copy"><span class="eyebrow">демо встречи игроков</span><h2>Посетитель и хозяин лавки</h2>
-    <p class="dialogue-line">Посетитель всегда слева и смотрит вправо; хозяин или продавец — справа и зеркально развёрнут влево. Эта сцена локальная: сетевой игры в прототипе нет.</p>
+    <p class="dialogue-line">Посетитель всегда справа, хозяин или продавец — всегда слева. Эта сцена локальная: сетевой игры в прототипе нет.</p>
     <div class="modal-actions"><button class="btn btn-primary" data-action="close-modal">Понятно</button></div></div>`;
   modalBackdrop.hidden = false;
 }

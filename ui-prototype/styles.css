@@ -999,7 +999,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--teal); outl
 .player-meeting-card span { margin-top: 3px; color: var(--muted); font-size: 8px; line-height: 1.4; }
 .player-meeting-card .btn { flex: 0 0 auto; }
 
-/* Reusable role-based dialogue compositor: left participant faces right; right host is mirrored. */
+/* Every dialogue places the host on the left and the visitor on the right. */
 .dialogue-modal-card { width: min(100%, 410px); max-height: min(90vh, 780px); overflow-y: auto; padding: 11px; background: #142239; }
 .dialogue-scene {
   position: relative;

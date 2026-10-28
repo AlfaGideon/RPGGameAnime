@@ -50,6 +50,7 @@ function bootPrototype(androidBridge) {
   }
   return {
     screen: elements.get('screen'),
+    modal: elements.get('modal-card'),
     window: sandbox,
     stored(key) { return storage.get(key); },
     input(id, value) {
@@ -94,6 +95,28 @@ test('victory awards local marks that appear in the wallet', () => {
   assert.match(app.screen.innerHTML, /Сигнал очищен/);
   app.click('[data-nav]', { nav: 'home' });
   assert.match(app.screen.innerHTML, /✧ 112/);
+});
+
+test('dialogue scenes always place the host left and visitor right', () => {
+  const app = bootPrototype();
+  app.click('[data-action]', { action: 'quick-demo' });
+
+  const getActorMarkup = (html, side) => {
+    const start = html.indexOf(`dialogue-actor--${side}`);
+    assert.notEqual(start, -1, `missing ${side} dialogue actor`);
+    const end = html.indexOf('</div>', start);
+    assert.notEqual(end, -1, `unterminated ${side} dialogue actor`);
+    return html.slice(start, end);
+  };
+
+  app.click('[data-action]', { action: 'npc-profile', npcId: 'iara' });
+  assert.match(getActorMarkup(app.modal.innerHTML, 'left'), /Иара Кест/);
+  assert.match(getActorMarkup(app.modal.innerHTML, 'right'), /Астра/);
+
+  app.click('[data-action]', { action: 'show-player-meeting' });
+  assert.match(getActorMarkup(app.modal.innerHTML, 'left'), /Ливен · хозяин лавки/);
+  assert.match(getActorMarkup(app.modal.innerHTML, 'right'), /Астра · посетитель/);
+  assert.match(app.modal.innerHTML, /Посетитель всегда справа, хозяин или продавец — всегда слева/);
 });
 
 test('communication hub separates guild, community, and support chats and saves local messages', () => {
